@@ -2254,10 +2254,10 @@ function getAdData() {
  */
 function watchAdAndGetReward() {
     let adTimerInterval = null; 
-    // 🌟 [테스트용 치트키] 로그인 안 해도 가짜 유저를 만들어서 통과시켜 줍니다!
+    // 🔒 [원상복구] 로그인을 안 한 유저(웹 환경)는 광고 보상을 받을 수 없도록 막습니다!
     if (!currentUser) {
-        console.log("테스트용 가상 유저 생성!");
-        currentUser = { coins: 0 }; // 가짜 코인 주머니 달아주기
+        alert('로그인 후 이용해주세요.');
+        return; // 여기서 함수를 끝내버려서 아래쪽의 광고 로직이 실행되지 않게 합니다.
     }
 
     const adData = getAdData();
