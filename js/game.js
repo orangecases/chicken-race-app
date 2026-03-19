@@ -2235,18 +2235,24 @@ async function removeFromMyRooms() {
     }
 }
 
-/**
- * [신규] 광고 데이터(오늘 시청 횟수)를 가져오고 날짜를 체크합니다.
- */
+// 🌟 [수정됨] 이제 브라우저 금고(localStorage)가 아니라, 서버에 저장된 내 정보(currentUser)를 확인합니다!
 function getAdData() {
-    const today = new Date().toDateString(); 
-    let data = JSON.parse(localStorage.getItem('chickenRunAdData')) || { date: today, count: 0 };
-
-    if (data.date !== today) {
-        data = { date: today, count: 0 };
-        localStorage.setItem('chickenRunAdData', JSON.stringify(data));
+    const todayStr = getTodayString();
+    
+    // 로그인을 안 했거나 데이터가 없으면 기본값 반환
+    if (!currentUser) return { count: 0, date: todayStr };
+    
+    // 💡 핵심 방어 로직: 서버에 기록된 날짜가 '오늘'이 아니면? (어제 본 거면)
+    if (currentUser.lastAdDate !== todayStr) {
+        currentUser.adCount = 0; // 횟수 초기화!
+        currentUser.lastAdDate = todayStr; // 날짜를 오늘로 갱신!
     }
-    return data;
+    
+    // 서버에 기록된 횟수 반환 (기록이 아예 없으면 0)
+    return { 
+        count: currentUser.adCount || 0, 
+        date: currentUser.lastAdDate 
+    };
 }
 
 /**
@@ -2361,12 +2367,14 @@ window.giveRewardFromApp = function() {
     console.log("🎁 띠링! 앱에서 진짜 광고 보상 지급 신호가 도착했습니다!");
 
     if (currentUser) {
-        // 1. 코인 숫자 올려주고 서버에 저장하기
+        // 🌟 [수정됨] 1. 코인과 광고 횟수를 올리고 '서버'로 전송하기!
+        const todayStr = getTodayString();
         currentUser.coins += AD_CONFIG.REWARD;
-        const currentAdData = getAdData();
-        currentAdData.count++;
-        localStorage.setItem('chickenRunAdData', JSON.stringify(currentAdData));
-        syncCoinsToServer(currentUser.coins);
+        currentUser.adCount = (currentUser.adCount || 0) + 1;
+        currentUser.lastAdDate = todayStr;
+        
+        // 브라우저 금고 대신, 방금 만든 '서버 동기화 함수'를 출동시킵니다!
+        syncAdRewardToServer(currentUser.coins, currentUser.adCount, currentUser.lastAdDate);
         updateCoinUI();
 
         // 2. 예쁜 보상 화면 띄우기 로직
@@ -2640,6 +2648,29 @@ async function syncCoinsToServer(newCoinAmount) {
     }
 }
 
+// 🌟 [추가] 오늘 날짜를 "YYYY-MM-DD" 형태로 깔끔하게 뽑아주는 계산기
+function getTodayString() {
+    const today = new Date();
+    return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+}
+
+// 🌟 [추가] 코인 + 광고 본 횟수 + 날짜를 서버(Firestore)에 한 방에 덮어씌우는 함수!
+async function syncAdRewardToServer(newCoinAmount, newAdCount, todayDate) {
+    if (!currentUser) return;
+    const user = firebase.auth().currentUser;
+    if (user) {
+        try {
+            await db.collection("users").doc(user.uid).update({
+                coins: newCoinAmount,
+                adCount: newAdCount,
+                lastAdDate: todayDate
+            });
+            console.log("🔒 서버 철벽 방어 완료! 코인:", newCoinAmount, "광고 횟수:", newAdCount);
+        } catch (error) {
+            console.error("❌ 서버 동기화 실패:", error);
+        }
+    }
+}
 /**
  * [신규] 유저 객체 전체를 서버에 저장하는 함수 (닉네임, 뱃지 등)
  */
