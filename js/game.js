@@ -3029,18 +3029,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnMember) {
         btnMember.onclick = () => {
-            // 🌟 [테스트용 치트키 2탄] 로그인 창 무시하고 무조건 프로필 띄우기!
-            if (!currentUser) {
-                isLoggedIn = true; // 로그인했다고 속임
-                currentUser = {
-                    id: 'test_user',
-                    nickname: '테스트유저',
-                    coins: 10,
-                    badges: {'1':0, '2':0, '3':0},
-                    joinedRooms: {}
-                }; // 완벽한 가짜 유저 생성
+            // 🌟 [핵심 마법] 탐지기 작동! 지금 실행 중인 곳이 스마트폰 앱인가요?
+            if (window.AndroidBridge) {
+                console.log("📱 앱 환경 감지: 로그인 창을 건너뛰고 테스트 유저를 생성합니다.");
+                
+                // 앱 환경이면 (가짜 테스트 유저로 프리패스!)
+                if (!currentUser) {
+                    isLoggedIn = true; 
+                    currentUser = { 
+                        id: 'test_user', 
+                        nickname: '앱테스트유저', 
+                        coins: 10, 
+                        badges: {'1':0, '2':0, '3':0}, 
+                        joinedRooms: {} 
+                    }; 
+                }
+                showUserProfile();
+
+            } else {
+                console.log("💻 웹 환경 감지: 정상적인 로그인 프로세스를 진행합니다.");
+                
+                // 웹 브라우저 환경이면 (원래대로 진짜 로그인 창 띄우기!)
+                if (isLoggedIn) {
+                    showUserProfile();
+                } else {
+                    const authMsg = sceneAuth.querySelector('.auth-message');
+                    if (authMsg) authMsg.style.display = 'none';
+                    sceneAuth.classList.remove('hidden');
+                }
             }
-            showUserProfile(); // 내 정보 창 강제 오픈!
         };
     }
 
