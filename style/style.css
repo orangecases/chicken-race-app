@@ -53,7 +53,7 @@ html, body small{font-size: 70%;}
     flex-direction: column;
     background-color: #3a413f;
     font-size: 0;
-    border-top: max(1.5rem, env(safe-area-inset-top)) solid #06a3eb;
+    border-top: max(1.5rem, env(safe-area-inset-top)) solid #000000;
 }
 
 /* =========================================
