@@ -931,25 +931,6 @@ function gameLoop() {
 // [5. UI 렌더링 및 장면 제어]
 
 /**
- * [신규] Top 100 더미 랭킹 데이터를 생성합니다. (앱 실행 시 한 번만)
- */
-function generateTop100Scores() {
-    if (top100Scores.length > 0) return;
-
-    const names = ["불멸의치킨", "치킨고수", "달리는영계", "질주본능", "치킨너겟", "계주선수", "바삭한날개", "황금알", "꼬꼬댁", "슈퍼닭"];
-    let score = 125430;
-
-    for (let i = 0; i < 30; i++) {
-        top100Scores.push({
-            rank: i + 1,
-            score: Math.floor(score),
-            name: `${names[i % names.length]}${i + 1}`
-        });
-        score *= (0.95 - Math.random() * 0.05);
-    }
-}
-
-/**
  * [신규] 내 최고 점수의 전체 순위를 계산합니다.
  */
 function getMyOverallRank(myBestScore) {
@@ -2716,8 +2697,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sceneUserProfile) sceneUserProfile.classList.add('hidden');
         }
     });
-
-    generateTop100Scores(); 
     // [수정] 로컬 스토리지에서 '내 기록'을 불러오는 로직을 제거합니다.
     // 이제 모든 기록은 onAuthStateChanged를 통해 Firestore에서 가져옵니다.
     renderMyRecordList(); // 초기에는 "기록 없음" 상태로 렌더링됩니다.
