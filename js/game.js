@@ -2342,13 +2342,6 @@ function watchAdAndGetReward() {
                     const viewFinished = document.getElementById('ad-view-finished');
                     if (viewLoading) viewLoading.style.display = 'none';
                     if (viewFinished) viewFinished.style.display = 'flex';
-
-                    currentUser.coins += AD_CONFIG.REWARD;
-                    const currentAdData = getAdData();
-                    currentAdData.count++;
-                    localStorage.setItem('chickenRunAdData', JSON.stringify(currentAdData));
-                    syncCoinsToServer(currentUser.coins);
-                    updateCoinUI();
                 };
             }
         }
@@ -2489,10 +2482,8 @@ async function loadUserData(user) {
         };
 
         const docSnap = await userRef.get();
-        // [수정] 클라이언트에서 사용자 문서를 직접 생성하는 로직을 제거합니다.
-        // 이제 모든 신규 사용자 문서 생성은 백엔드의 'createUserDocument' Cloud Function이 담당하여
-        // 데이터 생성 로직을 일원화하고 안정성을 높입니다.
         let initialLoadComplete = false;
+        
         unsubscribeUserData = userRef.onSnapshot((snapshot) => {
             if (!snapshot.exists) {
                 console.error("FATAL: User document does not exist after set-merge.");
@@ -2503,12 +2494,21 @@ async function loadUserData(user) {
             const correctEmail = user.email || (providerInfo ? providerInfo.email : null);
             const isAdminUser = ADMIN_UIDS.includes(user.uid);
 
+            // 💡 여기서 서버의 모든 데이터(광고 횟수 포함)가 currentUser로 쏙 들어옵니다!
             currentUser = { ...currentUser, ...userData, email: correctEmail || userData.email, isAdmin: isAdminUser };
+
+            // 🌟 [신규 추가] 로그인 직후 '오늘 날짜'를 체크해서, 어제 본 기록이면 화면을 0회로 리셋해줍니다!
+            const todayStr = getTodayString(); 
+            if (currentUser.lastAdDate !== todayStr) {
+                currentUser.adCount = 0;
+                currentUser.lastAdDate = todayStr;
+                // (서버에는 유저가 오늘 첫 광고를 볼 때 알아서 1회로 갱신되어 저장되니 여기서 굳이 저장 안 해도 됩니다!)
+            }
 
             // [신규] Firestore에서 불러온 데이터로 '내 기록' 관련 변수 초기화
             myScores = currentUser.myScores || [];
             bestScore = currentUser.bestScore || 0;
-            renderMyRecordList(); // 기록을 불러온 후 목록 UI 갱신
+            renderMyRecordList(); 
 
             if (!initialLoadComplete) {
                 initialLoadComplete = true;
