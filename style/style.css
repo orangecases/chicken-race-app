@@ -53,7 +53,6 @@ html, body small{font-size: 70%;}
     flex-direction: column;
     background-color: #3a413f;
     font-size: 0;
-    padding-top: max(1.5rem, env(safe-area-inset-top));
 }
 
 /* =========================================
@@ -155,7 +154,7 @@ html, body small{font-size: 70%;}
    ========================================= */
 #game-container {
     width: 100%;
-    aspect-ratio: 1248 / 820; 
+    aspect-ratio: 1242 / 880; 
     background-color: transparent;
     position: relative;
     container-type: inline-size; /* 폰트 반응형 크기 조절용 */
@@ -774,12 +773,14 @@ html, body small{font-size: 70%;}
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    padding-bottom: 2rem;
-    aspect-ratio: 1248 / 820;
+    aspect-ratio: 1242 / 880;
     position: relative;
     container-type: inline-size;
-    background-image: url('../assets/images/home-bg.png');
-    background-size: cover;
+    background-image: url(../assets/images/home-bg.png);
+    background-size: 100%;
+    background-repeat: no-repeat;
+    background-position: bottom;
+    background-color: #0580b9;
 }
 .home .game_title{
     max-width: 14rem;
