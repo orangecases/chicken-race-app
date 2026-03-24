@@ -2578,7 +2578,7 @@ function loginWithFacebook() {
  */
 function loginWithNaver() {
     const clientId = "YNgZCcwBzPp11G9wKmHS";
-    const redirectUri = encodeURIComponent("https://orangecases.github.io/chicken-race/");
+    const redirectUri = encodeURIComponent("https://orangecases.github.io/chicken-race-app/");
     const state = Math.random().toString(36).substr(2, 11);
     const url = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
 
