@@ -20,7 +20,7 @@ if (window.location.hash.includes('access_token')) {
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 1248;
-const GAME_HEIGHT = 820;
+const GAME_HEIGHT = 880;
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
@@ -141,8 +141,8 @@ class ScrollingBackground {
         ctx.drawImage(img, this.x + this.width, yPosition, this.width + 2, this.height);
     }
 }
-const skyBg = new ScrollingBackground('sky', 0.2, 1242, 696);
-const floorBg = new ScrollingBackground('floor', 1.0, 1240, 124);
+const skyBg = new ScrollingBackground('sky', 0.2, 1248, 756);
+const floorBg = new ScrollingBackground('floor', 1.0, 1248, 124);
 
 const chicken = {
     width: 128, height: 128, x: 100, y: FLOOR_Y, dy: 0, isJumping: false, frameDelay: 8, isBoosting: false, targetX: 100,
@@ -2668,6 +2668,29 @@ async function saveUserDataToFirestore() {
     }
 }
 
+/**
+ * [개발용] 코인 수량을 강제로 설정합니다.
+ * @param {number} amount - 설정할 코인의 양
+ */
+function setCoins(amount) {
+    const newAmount = parseInt(amount);
+    if (isNaN(newAmount) || newAmount < 0) {
+        console.error("❌ 유효하지 않은 숫자입니다. 0 이상의 숫자를 입력해주세요.");
+        return;
+    }
+
+    if (currentUser) { // 로그인 유저
+        currentUser.coins = newAmount;
+        saveUserDataToFirestore(); // 서버에 저장하면 onSnapshot 리스너가 UI를 자동으로 업데이트합니다.
+        console.log(`💰 [로그인 유저] 코인을 ${newAmount}개로 설정하고 서버에 저장했습니다. 잠시 후 UI가 갱신됩니다.`);
+    } else { // 게스트 유저
+        guestCoins = newAmount;
+        localStorage.setItem('chickenRunGuestCoins', newAmount.toString());
+        updateCoinUI(); // 게스트는 수동으로 UI를 갱신해야 합니다.
+        console.log(`💰 [게스트 유저] 코인이 ${newAmount}개로 설정되었습니다.`);
+    }
+}
+
 // [6. 이벤트 리스너]
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -3376,4 +3399,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.resetAdCount = resetAdCount;
     window.resetRoomData = resetRoomData;
+    window.setCoins = setCoins; // [신규] 개발용 코인 설정 함수 전역 등록
 });
