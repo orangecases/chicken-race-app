@@ -873,6 +873,11 @@ function gameLoop() {
             // [수정] 구조화된 HUD 업데이트
             scoreEl.querySelector('.score-val').innerText = displayVal.toLocaleString();
         }
+        const myRankingScoreEl = document.getElementById('my-ranking-score');
+        if (myRankingScoreEl) {
+            const realTimeRankingScore = calculateMyLocalDisplayScore();
+            myRankingScoreEl.innerHTML = `${Math.floor(realTimeRankingScore).toLocaleString()}<small>M</small>`;
+        }
 
         // 부스트 및 기본 속도 조절
         if (chicken.isBoosting) {
@@ -1733,6 +1738,9 @@ async function renderMultiRanking() {
             finalPlayerScore = calculateMyLocalDisplayScore();
         }
 
+        // 🚨 [추가된 부분] 만약 지금 그리는 사람이 '나'라면 이름표를 만들고, 아니면 빈칸으로 둡니다.
+        let scoreSpanId = (p.id === myId) ? 'id="my-ranking-score"' : '';
+
         li.innerHTML = `
             <div class="${charClass}">
                 <img src="${charImg}">
@@ -1741,7 +1749,7 @@ async function renderMultiRanking() {
             <div class="info">
                 <small>${p.name} ${hostIndicatorText}</small>
                 <p class="score-display">
-                    <span>${Math.floor(finalPlayerScore).toLocaleString()}<small>M</small></span>
+                    <span ${scoreSpanId}>${Math.floor(finalPlayerScore).toLocaleString()}<small>M</small></span>
                     ${botControlButtonsHTML}
                 </p>
             </div>
