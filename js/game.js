@@ -901,6 +901,7 @@ function gameLoop() {
                             myPlayer.bestScore = Math.max((myPlayer.bestScore || 0), score);
                         }
                         myPlayer.score = 0; // 현재 판 점수 초기화
+                        score = 0;          // 🚨 [여기에 추가!] 원본 글로벌 score도 반드시 0으로 비워줍니다!
                     }
                     if (currentUser && currentUser.joinedRooms[currentRoom.id]) {
                         currentUser.joinedRooms[currentRoom.id].usedAttempts++;
@@ -1760,7 +1761,7 @@ function calculateMyLocalDisplayScore() {
     const myPlayer = multiGamePlayers.find(p => p.id === myId);
     if (!myPlayer) return 0;
 
-    const currentRunScore = (gameState === STATE.PLAYING || STATE.CRASHED) ? score : 0;
+    const currentRunScore = (gameState === STATE.PLAYING || gameState === STATE.CRASHED) ? score : 0;
 
     let displayScore = 0;
     if (currentRoom.rankType === 'total') {
