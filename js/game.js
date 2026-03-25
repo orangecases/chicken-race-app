@@ -1099,7 +1099,7 @@ async function loadLeaderboard() {
     try {
         const querySnapshot = await db.collection("rankings")
             .orderBy("score", "desc")
-            .limit(10)
+            .limit(100)
             .get();
 
         console.log("🏆 랭킹 데이터를 가져왔습니다:");
