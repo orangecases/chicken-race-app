@@ -411,7 +411,7 @@ html, body small{font-size: 70%;}
     /* 비율 유지 */
     aspect-ratio: 78 / 20; 
     
-    background: url('../assets/images/control_frame.png') no-repeat top/contain;
+    background: url('../assets/images/control_frame.png') no-repeat top/cover;
     z-index: 100;
     
     display: flex;
