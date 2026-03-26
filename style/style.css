@@ -409,9 +409,9 @@ html, body small{font-size: 70%;}
     width: 100%;
     
     /* 비율 유지 */
-    aspect-ratio: 78 / 24; 
+    aspect-ratio: 78 / 20; 
     
-    background: url('../assets/images/control_frame.png') no-repeat center/contain;
+    background: url('../assets/images/control_frame.png') no-repeat top/contain;
     z-index: 100;
     
     display: flex;
@@ -442,6 +442,8 @@ html, body small{font-size: 70%;}
     width: 43.59%; 
     aspect-ratio: 34 / 17;
     
+    position: relative;
+    top: -0.25rem;
     background-color: transparent;
     border: none;
     background-size: contain;
@@ -593,7 +595,7 @@ html, body small{font-size: 70%;}
    - 이렇게 하면 스크롤바가 잘리지 않고 전체가 위로 올라갑니다.
 */
 #scene-game:not(.controls-hidden) #list-container {
-    margin-bottom: 28%;
+    margin-bottom: 26%;
 }
 .score-list li {
     display: flex;
