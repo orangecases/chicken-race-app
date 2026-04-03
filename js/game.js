@@ -953,40 +953,50 @@ function getMyOverallRank(myBestScore) {
 async function saveMyScore(newScore) {
     if (newScore <= 0) return;
 
-    // [수정] 로그인한 유저만 서버에 기록을 저장합니다.
-    if (!currentUser) {
-        console.log("게스트 유저는 '내 기록'이 서버에 저장되지 않습니다.");
-        // 게스트 기록은 저장하지 않음으로써 서버 저장 방식으로 통일합니다.
-        return;
-    }
-
     const scoreEntry = {
         score: newScore,
         date: new Date().toISOString()
     };
+    const MAX_SCORES = 50; // 최대 50개 기록 저장
 
-    // [수정] Firestore에서 가져온 유저 데이터의 myScores를 사용합니다.
+    // 🚨 1. 게스트 유저일 경우: 서버 대신 로컬 스토리지(기기)에 저장!
+    if (!currentUser) {
+        let guestScores = JSON.parse(localStorage.getItem('chickenRunGuestScores') || '[]');
+        guestScores.push(scoreEntry);
+        guestScores.sort((a, b) => b.score - a.score);
+        
+        if (guestScores.length > MAX_SCORES) {
+            guestScores.length = MAX_SCORES;
+        }
+
+        // 로컬 스토리지에 덮어쓰기
+        localStorage.setItem('chickenRunGuestScores', JSON.stringify(guestScores));
+
+        // 화면 업데이트용 변수 동기화
+        myScores = guestScores;
+        bestScore = guestScores.length > 0 ? guestScores[0].score : 0;
+        renderMyRecordList();
+        console.log("✅ 게스트의 '내 기록'이 기기에 안전하게 저장되었습니다.");
+        return; // 여기서 함수 종료! 서버로는 안 보냄
+    }
+
+    // --- (아래는 원래 있던 로그인 유저용 서버 저장 로직 그대로 두시면 됩니다!) ---
     const userScores = currentUser.myScores || [];
     userScores.push(scoreEntry);
     userScores.sort((a, b) => b.score - a.score);
 
-    const MAX_SCORES = 50; // 최대 50개 기록 저장
     if (userScores.length > MAX_SCORES) {
         userScores.length = MAX_SCORES;
     }
 
     const newBestScore = userScores.length > 0 ? userScores[0].score : 0;
 
-    // 로컬 currentUser 객체 업데이트 (UI 즉시 반영용)
     currentUser.myScores = userScores;
     currentUser.bestScore = newBestScore;
-
-    // UI 갱신을 위해 전역 변수에도 동기화
     myScores = currentUser.myScores;
     bestScore = currentUser.bestScore;
     renderMyRecordList();
 
-    // [수정] Firestore에 변경된 myScores와 bestScore를 업데이트합니다.
     try {
         const userRef = db.collection("users").doc(currentUser.id);
         await userRef.update({
@@ -2715,9 +2725,10 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUser = null;
             console.log("❓ 로그아웃 상태");
 
-            // [신규] 로그아웃 시 '내 기록' 관련 변수 및 UI 초기화
-            myScores = [];
-            bestScore = 0;
+            // 🚨 로그아웃(게스트) 상태일 때는 기기에 저장된 게스트 기록을 불러옵니다.
+            let guestScores = JSON.parse(localStorage.getItem('chickenRunGuestScores') || '[]');
+            myScores = guestScores;
+            bestScore = guestScores.length > 0 ? guestScores[0].score : 0;
             renderMyRecordList();
 
             updateCoinUI(); 
