@@ -2024,6 +2024,9 @@ async function enterGameScene(mode, roomData = null) {
         if (!gameLoopId) {
             gameLoop();
         }
+        // 🚨 방에 들어오자마자 예전 랭킹 화면을 즉시 지우고 로딩 표시!
+        const listEl = document.getElementById('multi-score-list');
+        if (listEl) listEl.innerHTML = '<li style="justify-content:center; padding:2rem 0;"><div class="info"><p style="text-align:center;">랭킹 데이터를 불러오는 중...</p></div></li>';
 
         const myPlayerId = currentUser.id;
         const roomRef = db.collection('rooms').doc(currentRoom.id);
