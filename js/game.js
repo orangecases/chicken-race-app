@@ -1991,6 +1991,11 @@ async function enterGameScene(mode, roomData = null) {
     document.getElementById('scene-intro').classList.add('hidden');
     document.getElementById('scene-game').classList.remove('hidden');
 
+    // 🚨 서버 통신(await)을 기다리기 전에 캔버스와 모든 UI를 즉시 삭제
+    resetGame();
+    setControlsVisibility(false);
+    drawStaticFrame();
+
     if (mode === 'single') {
         currentRoom = { attempts: 1, usedAttempts: 0, title: "싱글 테스트", status: "inprogress" };
         document.getElementById('view-single-mode').classList.remove('hidden');
