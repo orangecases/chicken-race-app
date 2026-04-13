@@ -2,20 +2,6 @@
  * 📢 치킨 런 - 앱 버전
  */
 
-// [네이버 로그인 팝업용 토큰 전달 로직]
-if (window.location.hash.includes('access_token')) {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const token = params.get('access_token');
-
-    // 이 창이 팝업창인지 확인하고 부모 창으로 토큰 전달
-    if (window.opener) {
-        window.opener.postMessage({ type: 'NAVER_LOGIN', token: token }, '*');
-        window.close(); // 팝업 닫기
-    }
-    // 🚨 [추가됨] 팝업창에서는 더 이상 아래쪽의 게임 로직을 실행하지 않도록 강제로 멈춥니다!
-    throw new Error("팝업창 처리를 완료하고 스크립트를 중지합니다. (정상적인 동작입니다)");
-}
-
 // [1. 전역 변수 및 게임 설정]
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -2457,6 +2443,26 @@ function loginWithGoogle() {
 }
 
 /**
+ * [신규] 애플 로그인 함수
+ */
+function loginWithApple() {
+    const provider = new firebase.auth.OAuthProvider('apple.com');
+    provider.addScope('email');
+    provider.addScope('name');
+
+    firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+            console.log("✅ 애플 로그인 성공!");
+        })
+        .catch((error) => {
+            console.error("❌ 애플 로그인 실패:", error.code, error.message);
+            if (error.code !== 'auth/popup-closed-by-user') {
+                alert("애플 로그인 중 오류가 발생했습니다.");
+            }
+        });
+}
+
+/**
  * [신규] 서버에서 유저 데이터를 불러오거나, 신규 유저일 경우 생성합니다.
  */
 async function loadUserData(user) {
@@ -2474,9 +2480,8 @@ async function loadUserData(user) {
         let providerSuffix = "";
         if (providerInfo) {
             const providerId = providerInfo.providerId;
-            if (providerId.includes('kakao')) providerSuffix = " (Kakao)";
-            else if (providerId.includes('google')) providerSuffix = " (Google)";
-            else if (providerId.includes('naver')) providerSuffix = " (Naver)";
+            if (providerId.includes('google')) providerSuffix = " (Google)";
+            else if (providerId.includes('apple')) providerSuffix = " (Apple)";
         }
         const finalNickname = (extractedNickname || '이름없음') + providerSuffix;
 
@@ -2559,83 +2564,6 @@ async function loadUserData(user) {
         console.error("❌ 유저 데이터 초기 로딩/생성 실패:", error);
         alert("유저 정보를 불러오는 중 오류가 발생했습니다.");
     }
-}
-
-/**
- * [신규] 카카오 OIDC 로그인 함수
- */
-function loginWithKakao() {
-    const provider = new firebase.auth.OAuthProvider('oidc.kakao');
-    provider.addScope('profile_nickname');
-    provider.addScope('account_email');
-
-    firebase.auth().signInWithPopup(provider).catch((error) => {
-        console.error("❌ 카카오 로그인 팝업 실패:", error.message);
-        if (error.code !== 'auth/popup-closed-by-user') {
-            alert("카카오 로그인 중 오류가 발생했습니다: " + error.message);
-        }
-    });
-}
-
-/**
- * [신규] 페이스북 로그인 함수
- */
-function loginWithFacebook() {
-    const provider = new firebase.auth.FacebookAuthProvider();
-
-    provider.addScope('email');
-    provider.addScope('public_profile');
-
-    firebase.auth().signInWithPopup(provider)
-        .then((result) => {
-            console.log("✅ 페이스북 로그인 성공!");
-        })
-        .catch((error) => {
-            console.error("❌ 페이스북 로그인 실패:", error.code, error.message);
-            if (error.code === 'auth/account-exists-with-different-credential') {
-                alert("이미 동일한 이메일로 가입된 다른 계정(구글/네이버 등)이 있습니다.");
-            } else {
-                alert("페이스북 로그인 중 오류가 발생했습니다: " + error.message);
-            }
-        });
-}
-
-/**
- * [수정됨] 네이버 팝업 로그인 & 커스텀 토큰 인증 로직
- */
-function loginWithNaver() {
-    const clientId = "YNgZCcwBzPp11G9wKmHS";
-    const redirectUri = encodeURIComponent("https://orangecases.github.io/chicken-race-app/");
-    const state = Math.random().toString(36).substr(2, 11);
-    const url = `https://nid.naver.com/oauth2.0/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
-
-    console.log("🚀 최종 전송 URL:", url);
-
-    window.open(url, 'naverlogin', 'width=450,height=600');
-
-    window.addEventListener('message', async (event) => {
-        if (event.data.type === 'NAVER_LOGIN' && event.data.token) {
-            const accessToken = event.data.token;
-
-            console.log("🔑 네이버 Access Token 획득! 백엔드로 검증을 요청합니다...");
-            console.log("🔑 프론트엔드가 낚아챈 토큰:", accessToken);
-
-            try {
-                // [FIX] Cloud Functions 리전 지정 방식 수정 (SDK 호환성)
-                // firebase.functions('region') -> firebase.app().functions('region')
-                const loginFunction = firebase.app().functions('asia-northeast3').httpsCallable('naverLogin');
-                const result = await loginFunction({ accessToken: accessToken });
-                const customToken = result.data.customToken;
-
-                await firebase.auth().signInWithCustomToken(customToken);
-                console.log("✅ 네이버 로그인(커스텀 토큰) 완벽 성공!");
-
-            } catch (error) {
-                console.error("❌ 백엔드 인증 처리 중 오류:", error);
-                alert("네이버 로그인 처리 중 오류가 발생했습니다.");
-            }
-        }
-    }, { once: true }); 
 }
 
 /**
@@ -3126,14 +3054,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = () => {
             if (btn.classList.contains('google')) {
                 loginWithGoogle();
-            } else if (btn.classList.contains('kakao')) {
-                loginWithKakao();
-            } else if (btn.classList.contains('facebook')) {
-                loginWithFacebook();
-            } else if (btn.classList.contains('naver')) {
-                loginWithNaver();
-            } else {
-                alert('해당 로그인 방식은 현재 지원되지 않습니다.');
+            } else if (btn.classList.contains('ios')) { // HTML의 class="ios"와 일치시킴
+                loginWithApple(); // 아직 이 함수는 없으니 아래 5번에서 만듭니다.
             }
         };
     });
