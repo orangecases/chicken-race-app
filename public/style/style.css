@@ -1059,20 +1059,21 @@ html, body small{font-size: 70%;}
 
 .sns-login-group {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.75rem;
 }
 
 .sns-btn {
     display: flex;
+    flex: auto;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
     gap: 0.75rem;
     padding: 0.75rem;
     border: 0.25rem solid white;
+    border-radius: 0.75rem;
     font-size: 0.95rem;
     cursor: pointer;
-    font-family: 'KoreanYNMYTM';
     font-weight: 100;
 }
 
@@ -1080,8 +1081,8 @@ html, body small{font-size: 70%;}
 .sns-btn::before {
     content: '';
     display: block;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 3rem;
+    height: 3rem;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
