@@ -1091,17 +1091,8 @@ html, body small{font-size: 70%;}
 .sns-btn.google { background-color: #FFFFFF; color: #191919; }
 .sns-btn.google::before { background-image: url(../assets/images/sns-google.png); }
 
-.sns-btn.ios { background-color: #000000; color: #fff; }
-.sns-btn.ios::before { background-image: url(../assets/images/sns-ios.png); }
-
-.sns-btn.kakao { background-color: #f6dc32; color: #191919;}
-.sns-btn.kakao::before { background-image: url(../assets/images/sns-kakao.png); }
-
-.sns-btn.facebook { background-color: #1877F2; color: #fff; }
-.sns-btn.facebook::before { background-image: url(../assets/images/sns-facebook.png); }
-
-.sns-btn.naver { background-color: #35b01e; color: #fff; }
-.sns-btn.naver::before { background-image: url(../assets/images/sns-naver.png); }
+.sns-btn.apple { background-color: #000000; color: #fff; }
+.sns-btn.apple::before { background-image: url(../assets/images/sns-ios.png); }
 
 /* [신규] 사용자 정보 모달 */
 .input-group input[readonly] {
