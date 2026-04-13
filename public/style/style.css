@@ -1070,7 +1070,7 @@ html, body small{font-size: 70%;}
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    border: 0.25rem solid white;
+    border: 0 solid white;
     border-radius: 0.75rem;
     font-size: 0.95rem;
     cursor: pointer;
