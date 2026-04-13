@@ -3054,7 +3054,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = () => {
             if (btn.classList.contains('google')) {
                 loginWithGoogle();
-            } else if (btn.classList.contains('ios')) { // HTML의 class="ios"와 일치시킴
+            } else if (btn.classList.contains('apple')) { // HTML의 class="ios"와 일치시킴
                 loginWithApple(); // 아직 이 함수는 없으니 아래 5번에서 만듭니다.
             }
         };
