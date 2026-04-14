@@ -1319,7 +1319,7 @@ function showUserProfile() {
 
     // [수정 포인트] 이메일이 있으면 이메일을, 없으면 고유 ID(UID)를 보여줍니다.
     // UID가 너무 길면 뒷부분만 잘라서 보여주는 식으로 가독성을 높일 수 있습니다.
-    const displayId = currentUser.email ? currentUser.email : `User_${currentUser.id.substring(0, 8)}`;
+    const displayId = currentUser.id;
     document.getElementById('profile-id').value = displayId;
     document.getElementById('profile-nickname').value = currentUser.nickname || '';
     document.getElementById('badge-count-1').innerText = (currentUser.badges && currentUser.badges['1']) || 0;
