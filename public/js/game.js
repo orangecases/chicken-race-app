@@ -2499,8 +2499,16 @@ async function loadUserData(user) {
         
         unsubscribeUserData = userRef.onSnapshot((snapshot) => {
             if (!snapshot.exists) {
-                console.error("FATAL: User document does not exist after set-merge.");
-                return;
+                console.log("🆕 신규 유저 감지: Firestore에 문서를 생성합니다.");
+                try {
+                    // 초기 데이터를 서버에 생성 (set)
+                    await userRef.set(initialUserData);
+                    // 생성 직후에는 리스너가 다시 돌면서 snapshot.exists가 true가 됩니다.
+                    return; 
+                } catch (err) {
+                    console.error("❌ 유저 문서 생성 실패:", err);
+                    return;
+                }
             }
 
             const userData = snapshot.data();
@@ -2553,10 +2561,6 @@ async function loadUserData(user) {
 
             updateCoinUI();
             fetchMyRooms();
-            const sceneUserProfile = document.getElementById('scene-user-profile');
-            if (sceneUserProfile && !sceneUserProfile.classList.contains('hidden')) {
-                showUserProfile();
-            }
         }, (error) => {
             console.error("❌ 유저 데이터 실시간 수신 실패:", error);
         });
@@ -3054,8 +3058,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = () => {
             if (btn.classList.contains('google')) {
                 loginWithGoogle();
-            } else if (btn.classList.contains('apple')) { // HTML의 class="ios"와 일치시킴
-                loginWithApple(); // 아직 이 함수는 없으니 아래 5번에서 만듭니다.
+            } else if (btn.classList.contains('apple')) {
+                loginWithApple();
             }
         };
     });
