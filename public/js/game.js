@@ -1083,17 +1083,29 @@ async function fetchNicknames(uids) {
  */
 async function displayRankings(rankData) {
     const uids = rankData.filter(data => data.uid).map(data => data.uid);
-    const uniqueUids = [...new Set(uids)];
+    const uniqueUids = [...new Set(uids)]; // 중복된 UID 제거
 
-    // [수정] 클라이언트에서 직접 DB를 읽는 대신, Cloud Function을 호출합니다.
-    const nicknameMap = await fetchNicknames(uniqueUids);
+    const nicknameMap = {};
+
+    // 💡 핵심: Cloud Function을 거치지 않고 직접 Firestore에서 닉네임들을 병렬로 가져옵니다.
+    try {
+        await Promise.all(uniqueUids.map(async (uid) => {
+            const userDoc = await db.collection("users").doc(uid).get();
+            if (userDoc.exists) {
+                nicknameMap[uid] = userDoc.data().nickname;
+            }
+        }));
+    } catch (err) {
+        console.warn("⚠️ 일부 닉네임을 최신화하지 못했습니다:", err);
+    }
 
     top100Scores = rankData.map((data, index) => ({
         rank: index + 1,
         score: data.score,
-        // [수정] 반환된 맵을 사용하여 닉네임을 설정합니다.
-        name: (data.uid && nicknameMap[data.uid]) || data.nickname
+        // Firestore에서 가져온 최신 닉네임이 있으면 쓰고, 없으면 기록 당시의 닉네임을 사용합니다.
+        name: (data.uid && nicknameMap[data.uid]) || data.nickname || '지나가던 병아리'
     }));
+    
     renderTop100List();
 }
 
@@ -1305,7 +1317,10 @@ function showUserProfile() {
     const scene = document.getElementById('scene-user-profile');
     if (!scene) return;
 
-    document.getElementById('profile-id').value = currentUser.email || currentUser.id;
+    // [수정 포인트] 이메일이 있으면 이메일을, 없으면 고유 ID(UID)를 보여줍니다.
+    // UID가 너무 길면 뒷부분만 잘라서 보여주는 식으로 가독성을 높일 수 있습니다.
+    const displayId = currentUser.email ? currentUser.email : `User_${currentUser.id.substring(0, 8)}`;
+    document.getElementById('profile-id').value = displayId;
     document.getElementById('profile-nickname').value = currentUser.nickname || '';
     document.getElementById('badge-count-1').innerText = (currentUser.badges && currentUser.badges['1']) || 0;
     document.getElementById('badge-count-2').innerText = (currentUser.badges && currentUser.badges['2']) || 0;
