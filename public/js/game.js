@@ -2497,7 +2497,7 @@ async function loadUserData(user) {
         const docSnap = await userRef.get();
         let initialLoadComplete = false;
         
-        unsubscribeUserData = userRef.onSnapshot((snapshot) => {
+        unsubscribeUserData = userRef.onSnapshot(async (snapshot) => {
             if (!snapshot.exists) {
                 console.log("🆕 신규 유저 감지: Firestore에 문서를 생성합니다.");
                 try {
