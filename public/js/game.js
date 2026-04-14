@@ -2226,30 +2226,35 @@ async function removeFromMyRooms() {
     const participantsRef = roomRef.collection('participants');
 
     try {
-        // 1. 유저의 정보(joinedRooms)에서 해당 방 정보를 '숨김'이 아니라 아예 '삭제'
+        // 1. [내 계정] 내 joinedRooms 목록에서 해당 방을 '숨김' 처리 (참가중 탭에서 사라짐)
         await db.collection("users").doc(myId).update({
-            [`joinedRooms.${roomId}`]: firebase.firestore.FieldValue.delete()
+            [`joinedRooms.${roomId}.hidden`]: true 
         });
 
-        // 2. 방의 participants 컬렉션에서 '나'를 삭제
-        await participantsRef.doc(myId).delete();
+        // 2. [방 데이터] 방 안의 내 참가자 정보에 hidden: true 표시 (기록은 삭제 안 함!)
+        await participantsRef.doc(myId).update({ hidden: true });
+        console.log(`✅ 방 [${roomId}]이 내 목록에서 숨겨졌습니다. (기록은 유지됨)`);
 
-        // 3. 방 인원수 1 감소
-        await roomRef.update({
-            currentPlayers: firebase.firestore.FieldValue.increment(-1)
-        });
-
-        // 4. 방에 아무도 남지 않았는지 체크
+        // 3. [방폭 체크] 이 방에 있는 '모든' 사람(봇 포함)이 hidden: true 인지 확인
         const participantsSnapshot = await participantsRef.get();
-        if (participantsSnapshot.empty) {
-            await roomRef.delete(); // 방 문서 완전 삭제
-            console.log(`💣 마지막 유저가 떠났습니다. 방 [${roomId}] 완전 폭파 완료!`);
+        let shouldExplode = true;
+
+        participantsSnapshot.forEach(doc => {
+            if (!doc.data().hidden) {
+                shouldExplode = false; // 아직 한 명이라도 목록에 남겨둔 사람이 있다면 폭파 안 함
+            }
+        });
+
+        // 4. 모두가 목록에서 삭제했다면, 그때 비로소 방 전체를 삭제
+        if (shouldExplode) {
+            await roomRef.delete();
+            console.log(`💣 모든 참가자가 목록에서 삭제했으므로 방 [${roomId}]을 완전히 삭제합니다.`);
         }
 
         await exitToLobby(false);
 
     } catch (error) {
-        console.error("❌ 방 목록 제거 및 폭파 실패:", error);
+        console.error("❌ 목록에서 삭제 처리 중 오류:", error);
     }
 }
 
@@ -2845,30 +2850,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     await participantRef.update({ status: 'dead' });
                     break;
                 case 'force-delete':
-                    console.log(`[Debug] Bot [${botId}] '완전 삭제' 및 방폭 체크 시작`);
+                    console.log(`[Debug] Bot [${botId}] '목록 삭제' 시뮬레이션 시작`);
                     
                     try {
                         const roomRefForDelete = db.collection('rooms').doc(currentRoom.id);
                         const participantRef = roomRefForDelete.collection('participants').doc(botId);
 
-                        // 1. 봇을 participants 컬렉션에서 '진짜로' 삭제
-                        await participantRef.delete();
+                        // 1. 봇의 데이터는 지우지 않고 hidden: true만 설정
+                        await participantRef.update({ hidden: true });
 
-                        // 2. 방의 현재 인원수(currentPlayers) 1 감소
-                        await roomRefForDelete.update({
-                            currentPlayers: firebase.firestore.FieldValue.increment(-1)
+                        // 2. 방 안의 모든 참가자 상태 확인
+                        const participantsSnapshot = await roomRefForDelete.collection('participants').get();
+                        let shouldExplode = true;
+
+                        participantsSnapshot.forEach(doc => {
+                            if (!doc.data().hidden) {
+                                shouldExplode = false; 
+                            }
                         });
 
-                        // 3. 이제 방에 남은 사람이 있는지 확인
-                        const participantsSnapshot = await roomRefForDelete.collection('participants').get();
-                        
-                        if (participantsSnapshot.empty) {
-                            console.log(`💣 모든 참가자(봇 포함)가 사라졌습니다. 방 [${currentRoom.id}] 완전 폭파!`);
-                            await roomRefForDelete.delete(); // 껍데기까지 완전히 삭제
-                            exitToLobby(false); // 관리자도 로비로 튕겨나감
+                        if (shouldExplode) {
+                            console.log(`💣 모든 참가자(봇 포함)가 목록 삭제됨. 방 [${currentRoom.id}] 완전 삭제!`);
+                            await roomRefForDelete.delete();
+                            exitToLobby(false);
                         }
                     } catch (err) {
-                        console.error("❌ 봇 삭제 및 방폭 처리 중 오류:", err);
+                        console.error("❌ 봇 삭제 시뮬레이션 오류:", err);
                     }
                     break;
             }
