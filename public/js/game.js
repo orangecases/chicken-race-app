@@ -2247,8 +2247,21 @@ async function removeFromMyRooms() {
 
         // 4. 모두가 목록에서 삭제했다면, 그때 비로소 방 전체를 삭제
         if (shouldExplode) {
-            await roomRef.delete();
-            console.log(`💣 모든 참가자가 목록에서 삭제했으므로 방 [${roomId}]을 완전히 삭제합니다.`);
+            const batch = db.batch(); // 1. 일괄 처리를 위한 배치 생성
+
+            // 2. 하위 컬렉션(participants)에 있는 모든 문서(기록들)를 삭제 목록에 추가
+            // participantsSnapshot은 위에서 이미 가져온 상태여야 합니다.
+            participantsSnapshot.forEach(doc => {
+                batch.delete(doc.ref); 
+            });
+
+            // 3. 상위 문서(room) 자체를 삭제 목록에 추가
+            batch.delete(roomRef);
+
+            // 4. 🔥 배치 실행 (모든 하위 문서 + 상위 문서가 한 번에 증발함)
+            await batch.commit();
+            
+            console.log(`💣 방 [${roomId}]의 모든 참가자 데이터와 방 정보가 완전히 삭제되었습니다.`);
         }
 
         await exitToLobby(false);
