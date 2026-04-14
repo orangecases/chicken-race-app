@@ -2218,11 +2218,7 @@ async function deleteCurrentRoom() {
  * [FIX] '참가중인 목록'에서 현재 방을 제거합니다. (DB에서 방을 삭제하지 않음)
  */
 async function removeFromMyRooms() {
-    if (!currentRoom || !currentRoom.id || !currentUser) {
-        console.warn("목록에서 제거할 방 정보가 없습니다.");
-        await exitToLobby(false);
-        return;
-    }
+    if (!currentRoom || !currentRoom.id || !currentUser) return;
 
     const roomId = currentRoom.id;
     const myId = currentUser.id;
@@ -2230,42 +2226,30 @@ async function removeFromMyRooms() {
     const participantsRef = roomRef.collection('participants');
 
     try {
-        // 1. 내 프로필의 joinedRooms에서 숨김 처리
-        if (currentUser.joinedRooms[roomId]) {
-            currentUser.joinedRooms[roomId].hidden = true; 
-            await db.collection("users").doc(myId).update({
-                [`joinedRooms.${roomId}.hidden`]: true 
-            });
-        }
-
-        // 2. 방 안의 내 참가자(participant) 정보 숨김 처리
-        await participantsRef.doc(myId).update({ hidden: true });
-        console.log(`✅ 방 [${roomId}]을(를) '참가중인 목록'에서 숨겼습니다.`);
-
-        // 3. 🚨 [신규] 나를 포함해 이 방의 '모든' 참가자가 숨김(hidden) 상태인지 확인
-        const participantsSnapshot = await participantsRef.get();
-        let allHidden = true;
-        participantsSnapshot.forEach(doc => {
-            if (!doc.data().hidden) {
-                allHidden = false; // 한 명이라도 남아있으면 폭파 취소
-            }
+        // 1. 유저의 정보(joinedRooms)에서 해당 방 정보를 '숨김'이 아니라 아예 '삭제'
+        await db.collection("users").doc(myId).update({
+            [`joinedRooms.${roomId}`]: firebase.firestore.FieldValue.delete()
         });
 
-        // 4. 모두가 목록에서 지웠다면, 방 자체를 서버에서 완전히 삭제(폭파)
-        if (allHidden) {
-            try {
-                await roomRef.delete();
-                console.log(`💣 모든 참가자가 나갔습니다. 방 [${roomId}] 완전 폭파 완료!`);
-            } catch (deleteError) {
-                console.warn(`⚠️ 방 삭제 권한이 없어 남겨둡니다 (관리자 청소 필요):`, deleteError);
-            }
+        // 2. 방의 participants 컬렉션에서 '나'를 삭제
+        await participantsRef.doc(myId).delete();
+
+        // 3. 방 인원수 1 감소
+        await roomRef.update({
+            currentPlayers: firebase.firestore.FieldValue.increment(-1)
+        });
+
+        // 4. 방에 아무도 남지 않았는지 체크
+        const participantsSnapshot = await participantsRef.get();
+        if (participantsSnapshot.empty) {
+            await roomRef.delete(); // 방 문서 완전 삭제
+            console.log(`💣 마지막 유저가 떠났습니다. 방 [${roomId}] 완전 폭파 완료!`);
         }
 
         await exitToLobby(false);
 
     } catch (error) {
-        console.error("❌ '참가중인 목록'에서 방 숨기기 실패:", error);
-        alert("목록에서 방을 제거하는 중 오류가 발생했습니다.");
+        console.error("❌ 방 목록 제거 및 폭파 실패:", error);
     }
 }
 
@@ -2861,34 +2845,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     await participantRef.update({ status: 'dead' });
                     break;
                 case 'force-delete':
-                    console.log(`[Debug] Bot [${botId}] '목록에서 삭제' 시뮬레이션`);
+                    console.log(`[Debug] Bot [${botId}] '완전 삭제' 및 방폭 체크 시작`);
                     
                     try {
-                        // 1. 해당 봇의 상태만 hidden으로 업데이트 (데이터는 유지)
-                        await participantRef.update({ hidden: true });
-                        console.log(`✅ 봇 [${botId}]이(가) '목록 삭제'를 선언했습니다.`);
-
-                        // 2. 방 안의 모든 참가자(유저+봇)의 hidden 상태 확인
                         const roomRefForDelete = db.collection('rooms').doc(currentRoom.id);
-                        const participantsSnapshot = await roomRefForDelete.collection('participants').get();
-                        
-                        let allHidden = true;
-                        participantsSnapshot.forEach(doc => {
-                            if (!doc.data().hidden) {
-                                allHidden = false; // 한 명이라도 기록을 보고 있다면 폭파 취소
-                            }
+                        const participantRef = roomRefForDelete.collection('participants').doc(botId);
+
+                        // 1. 봇을 participants 컬렉션에서 '진짜로' 삭제
+                        await participantRef.delete();
+
+                        // 2. 방의 현재 인원수(currentPlayers) 1 감소
+                        await roomRefForDelete.update({
+                            currentPlayers: firebase.firestore.FieldValue.increment(-1)
                         });
 
-                        // 3. 만약 모든 참가자가 목록 삭제를 선언했다면 방 완전 폭파!
-                        if (allHidden) {
-                            console.log(`💣 모든 참가자가 삭제 선언을 했습니다. 방 [${currentRoom.id}]을(를) 완전 삭제합니다.`);
-                            await roomRefForDelete.delete();
-                            
-                            // 관리자 본인도 방이 폭파되었으므로 로비로 이동
-                            exitToLobby(false);
+                        // 3. 이제 방에 남은 사람이 있는지 확인
+                        const participantsSnapshot = await roomRefForDelete.collection('participants').get();
+                        
+                        if (participantsSnapshot.empty) {
+                            console.log(`💣 모든 참가자(봇 포함)가 사라졌습니다. 방 [${currentRoom.id}] 완전 폭파!`);
+                            await roomRefForDelete.delete(); // 껍데기까지 완전히 삭제
+                            exitToLobby(false); // 관리자도 로비로 튕겨나감
                         }
                     } catch (err) {
-                        console.error("❌ 봇 삭제 시뮬레이션 오류:", err);
+                        console.error("❌ 봇 삭제 및 방폭 처리 중 오류:", err);
                     }
                     break;
             }
