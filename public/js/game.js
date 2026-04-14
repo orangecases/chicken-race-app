@@ -34,10 +34,14 @@ let lastFirestoreUpdateTime = 0; // [3단계] Firestore 업데이트 쓰로틀�
 const FIRESTORE_UPDATE_INTERVAL = 1000; // [3단계] 1초 간격으로 업데이트
 let isJumpPressed = false; // [신규] 점프 버튼 누름 상태 유지 변수
 let displayedMyRecordsCount = 20; // [신규] 내 기록 표시 개수 (무한 스크롤용)
+let nicknameCache = {};
+
 
 // [수정] 관리자 식별 방식을 이메일에서 UID로 변경합니다.
 // 아래 배열에 Firebase Console > Authentication에서 확인한 관리자 계정의 UID를 추가하세요.
 const ADMIN_UIDS = ["51FsLG2SFlMOVhxtNNtwHdtT55O2"]; // 예: "Abc123xyz..."
+
+
 
 // [수정] 페이지네이션(Pagination) 설정: 1만개 이상의 방이 있어도 앱이 원활하게 동작하도록 합니다.
 let lastVisibleRoomDoc = null; // 마지막으로 불러온 방의 문서 참조
@@ -1067,24 +1071,36 @@ async function fetchNicknames(uids) {
     
     const uniqueUids = [...new Set(uids)];
     const nicknameMap = {};
+    const uidsToFetch = [];
 
-    try {
-        await Promise.all(uniqueUids.map(async (uid) => {
-            if (!uid) return;
-            const userDoc = await db.collection("users").doc(uid).get();
-            if (userDoc.exists) {
-                nicknameMap[uid] = userDoc.data().nickname || '알수없음';
-            } else {
-                nicknameMap[uid] = '알수없음';
-            }
-        }));
-        
-        console.log("✅ 닉네임 직접 로드 완료:", nicknameMap);
-        return nicknameMap;
-    } catch (error) {
-        console.error("❌ 닉네임 직접 가져오기 실패:", error);
-        return {};
+    // 1. 이미 알고 있는 닉네임은 캐시에서 바로 꺼냅니다.
+    uniqueUids.forEach(uid => {
+        if (nicknameCache[uid]) {
+            nicknameMap[uid] = nicknameCache[uid];
+        } else {
+            uidsToFetch.push(uid);
+        }
+    });
+
+    // 2. 모르는 닉네임이 있을 때만 Firestore에 물어봅니다.
+    if (uidsToFetch.length > 0) {
+        try {
+            await Promise.all(uidsToFetch.map(async (uid) => {
+                if (!uid) return;
+                const userDoc = await db.collection("users").doc(uid).get();
+                const name = userDoc.exists ? (userDoc.data().nickname || '알수없음') : '알수없음';
+                
+                // 캐시에 저장
+                nicknameCache[uid] = name;
+                nicknameMap[uid] = name;
+            }));
+            console.log("📡 Firestore에서 새 닉네임 로드 완료:", uidsToFetch);
+        } catch (error) {
+            console.error("❌ 닉네임 로드 실패:", error);
+        }
     }
+
+    return nicknameMap;
 }
 
 /**
