@@ -1057,23 +1057,32 @@ function renderTop100List() {
 }
 
 /**
- * [신규] Cloud Function을 호출하여 여러 사용자의 닉네임을 안전하게 가져옵니다.
+ * [수정] Firestore에서 직접 여러 사용자의 닉네임을 조회합니다.
+ * - Cloud Function의 CORS 이슈를 해결하기 위해 직접 조회 방식을 사용합니다.
  * @param {string[]} uids - 닉네임을 조회할 사용자 UID 배열
  * @returns {Promise<Object>} UID를 키로, 닉네임을 값으로 하는 객체
  */
 async function fetchNicknames(uids) {
-    if (uids.length === 0) {
-        return {};
-    }
+    if (!uids || uids.length === 0) return {};
+    
+    const uniqueUids = [...new Set(uids)];
+    const nicknameMap = {};
+
     try {
-        // [FIX] Cloud Functions 리전 지정 방식 수정 (SDK 호환성)
-        // firebase.functions('region') -> firebase.app().functions('region')
-        const getNicknamesFunction = firebase.app().functions('asia-northeast3').httpsCallable('getNicknames');
-        const result = await getNicknamesFunction({ uids: uids });
-        return result.data; // { uid1: 'nickname1', uid2: 'nickname2', ... }
+        await Promise.all(uniqueUids.map(async (uid) => {
+            if (!uid) return;
+            const userDoc = await db.collection("users").doc(uid).get();
+            if (userDoc.exists) {
+                nicknameMap[uid] = userDoc.data().nickname || '알수없음';
+            } else {
+                nicknameMap[uid] = '알수없음';
+            }
+        }));
+        
+        console.log("✅ 닉네임 직접 로드 완료:", nicknameMap);
+        return nicknameMap;
     } catch (error) {
-        console.error("❌ 닉네임 가져오기 함수 호출 실패:", error);
-        // 함수 호출에 실패하더라도 앱이 중단되지 않도록 빈 객체를 반환합니다.
+        console.error("❌ 닉네임 직접 가져오기 실패:", error);
         return {};
     }
 }
