@@ -37,7 +37,7 @@ let displayedMyRecordsCount = 20; // [신규] 내 기록 표시 개수 (무한 �
 
 // [수정] 관리자 식별 방식을 이메일에서 UID로 변경합니다.
 // 아래 배열에 Firebase Console > Authentication에서 확인한 관리자 계정의 UID를 추가하세요.
-const ADMIN_UIDS = ["zq4jlJbH47ZEasqIxNFVVhZIqwv1"]; // 예: "Abc123xyz..."
+const ADMIN_UIDS = ["51FsLG2SFlMOVhxtNNtwHdtT55O2"]; // 예: "Abc123xyz..."
 
 // [수정] 페이지네이션(Pagination) 설정: 1만개 이상의 방이 있어도 앱이 원활하게 동작하도록 합니다.
 let lastVisibleRoomDoc = null; // 마지막으로 불러온 방의 문서 참조
