@@ -2192,25 +2192,36 @@ function handleHomeButtonClick() {
 
 /**
  * [신규] 현재 방을 목록에서 삭제하고 로비로 이동
+ * [수정] 현재 방을 서버에서 완전히 삭제하고 내 정보에서도 지웁니다.
  */
 async function deleteCurrentRoom() {
-    if (!currentRoom || !currentRoom.id) {
+    if (!currentRoom || !currentRoom.id || !currentUser) {
         console.warn("삭제할 방 정보가 없습니다. 로비로 이동합니다.");
         exitToLobby(false);
         return;
     }
 
     const roomId = currentRoom.id;
+    const myId = currentUser.id;
 
     try {
+        console.log(`🧨 방 폭파 및 데이터 정리 시작: ${roomId}`);
+
+        // 1. [추가] 내 유저 문서의 joinedRooms에서 이 방 ID를 완전히 삭제합니다.
+        await db.collection("users").doc(myId).update({
+            [`joinedRooms.${roomId}`]: firebase.firestore.FieldValue.delete()
+        });
+
+        // 2. 실제 방 문서를 삭제합니다.
         await db.collection('rooms').doc(roomId).delete();
-        console.log(`✅ 방 [${roomId}]이(가) 서버에서 성공적으로 삭제(폭파)되었습니다.`);
+
+        console.log(`✅ 방 [${roomId}]과 유저 데이터가 성공적으로 삭제되었습니다.`);
 
         currentRoom = null;
-        exitToLobby(false);
+        exitToLobby(false); // 로비로 이동
     } catch (error) {
         console.error(`❌ 방 [${roomId}] 삭제 실패:`, error);
-        alert("방을 삭제하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        alert("방을 삭제하는 중 오류가 발생했습니다.");
     }
 }
 
