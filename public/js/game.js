@@ -2472,16 +2472,23 @@ function resetRoomData() {
  * [신규] 구글 로그인 함수
  */
 function loginWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('profile');
-    provider.addScope('email');
+    if (window.AndroidBridge && window.AndroidBridge.requestGoogleLogin) {
+        // 📱 앱 환경: 안드로이드 네이티브 로그인을 호출합니다.
+        console.log("📱 앱 환경: 안드로이드 네이티브 구글 로그인 요청");
+        window.AndroidBridge.requestGoogleLogin();
+    } else {
+        // 💻 웹 환경: 기존 파이어베이스 팝업 방식 사용
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('profile');
+        provider.addScope('email');
 
-    firebase.auth().signInWithPopup(provider).catch((error) => {
-        console.error("❌ 로그인 팝업 실패:", error.message);
-        if (error.code !== 'auth/popup-closed-by-user') {
-            alert("로그인 중 오류가 발생했습니다: " + error.message);
-        }
-    });
+        firebase.auth().signInWithPopup(provider).catch((error) => {
+            console.error("❌ 로그인 팝업 실패:", error.message);
+            if (error.code !== 'auth/popup-closed-by-user') {
+                alert("로그인 중 오류가 발생했습니다: " + error.message);
+            }
+        });
+    }
 }
 
 /**
@@ -3062,34 +3069,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnMember) {
         btnMember.onclick = () => {
-            // 🌟 [핵심 마법] 탐지기 작동! 지금 실행 중인 곳이 스마트폰 앱인가요?
-            if (window.AndroidBridge) {
-                console.log("📱 앱 환경 감지: 로그인 창을 건너뛰고 테스트 유저를 생성합니다.");
-                
-                // 앱 환경이면 (가짜 테스트 유저로 프리패스!)
-                if (!currentUser) {
-                    isLoggedIn = true; 
-                    currentUser = { 
-                        id: 'test_user', 
-                        nickname: '앱테스트유저', 
-                        coins: 10, 
-                        badges: {'1':0, '2':0, '3':0}, 
-                        joinedRooms: {} 
-                    }; 
-                }
+            if (isLoggedIn && currentUser) {
+                // 이미 로그인 상태면 프로필 모달 표시
                 showUserProfile();
-
             } else {
-                console.log("💻 웹 환경 감지: 정상적인 로그인 프로세스를 진행합니다.");
-                
-                // 웹 브라우저 환경이면 (원래대로 진짜 로그인 창 띄우기!)
-                if (isLoggedIn) {
-                    showUserProfile();
-                } else {
-                    const authMsg = sceneAuth.querySelector('.auth-message');
-                    if (authMsg) authMsg.style.display = 'none';
-                    sceneAuth.classList.remove('hidden');
-                }
+                // 로그아웃 상태면 로그인 선택창(구글/애플 버튼 있는 창) 표시
+                const authMsg = sceneAuth.querySelector('.auth-message');
+                if (authMsg) authMsg.style.display = 'none';
+                sceneAuth.classList.remove('hidden');
             }
         };
     }
@@ -3395,3 +3382,24 @@ document.addEventListener('DOMContentLoaded', () => {
     window.resetRoomData = resetRoomData;// [테스트용] 룸데이터 초기화(모집중)
     window.setCoins = setCoins; // [테스트용] 개발용 코인 설정 함수 전역 등록
 });
+
+/**
+ * [앱 전용] 안드로이드 네이티브 로그인 성공 시 호출되는 콜백 함수
+ * @param {string} token - 안드로이드에서 건네준 Google ID 토큰
+ */
+window.onNativeLoginSuccess = function(token) {
+    console.log("🎁 앱에서 로그인 토큰 도착! 파이어베이스 인증을 시작합니다.");
+    
+    // 안드로이드에서 받은 토큰으로 파이어베이스 로그인을 완료합니다.
+    const credential = firebase.auth.GoogleAuthProvider.credential(token);
+    firebase.auth().signInWithCredential(credential)
+        .then((result) => {
+            console.log("✅ 네이티브 브릿지 로그인 성공:", result.user.displayName);
+            // 이 호출이 성공하면 firebase.auth().onAuthStateChanged가 실행되어 
+            // 자동으로 loadUserData(user)가 작동합니다.
+        })
+        .catch((error) => {
+            console.error("❌ 네이티브 인증 실패:", error);
+            alert("인증 처리 중 오류가 발생했습니다.");
+        });
+};
