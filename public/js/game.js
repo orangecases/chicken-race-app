@@ -2226,7 +2226,7 @@ async function deleteCurrentRoom() {
 }
 
 /**
- * [FIX] '참가중인 목록'에서 현재 방을 제거합니다. (DB에서 방을 삭제하지 않음)
+ * [수정] '참가중인 목록'에서 내 정보를 완전히 삭제합니다.
  */
 async function removeFromMyRooms() {
     if (!currentRoom || !currentRoom.id || !currentUser) return;
@@ -2237,48 +2237,41 @@ async function removeFromMyRooms() {
     const participantsRef = roomRef.collection('participants');
 
     try {
-        // 1. [내 계정] 내 joinedRooms 목록에서 해당 방을 '숨김' 처리 (참가중 탭에서 사라짐)
+        console.log(`🗑️ 내 목록에서 방 [${roomId}] 완전 삭제 시도...`);
+
+        // 1. [내 계정] joinedRooms 맵에서 해당 방 ID 필드를 아예 제거합니다.
         await db.collection("users").doc(myId).update({
-            [`joinedRooms.${roomId}.hidden`]: true 
+            [`joinedRooms.${roomId}`]: firebase.firestore.FieldValue.delete()
         });
 
-        // 2. [방 데이터] 방 안의 내 참가자 정보에 hidden: true 표시 (기록은 삭제 안 함!)
+        // 2. [방 데이터] 방 안의 내 참가자 정보에도 '삭제됨(hidden)' 표시를 합니다.
         await participantsRef.doc(myId).update({ hidden: true });
-        console.log(`✅ 방 [${roomId}]이 내 목록에서 숨겨졌습니다. (기록은 유지됨)`);
 
-        // 3. [방폭 체크] 이 방에 있는 '모든' 사람(봇 포함)이 hidden: true 인지 확인
+        // 3. [방폭 체크] 모든 참가자가 이 방을 목록에서 지웠는지 확인
         const participantsSnapshot = await participantsRef.get();
         let shouldExplode = true;
 
         participantsSnapshot.forEach(doc => {
             if (!doc.data().hidden) {
-                shouldExplode = false; // 아직 한 명이라도 목록에 남겨둔 사람이 있다면 폭파 안 함
+                shouldExplode = false; // 아직 한 명이라도 목록에 둔 사람이 있다면 유지
             }
         });
 
-        // 4. 모두가 목록에서 삭제했다면, 그때 비로소 방 전체를 삭제
+        // 4. 모두가 지웠다면 방 전체 데이터 파괴
         if (shouldExplode) {
-            const batch = db.batch(); // 1. 일괄 처리를 위한 배치 생성
-
-            // 2. 하위 컬렉션(participants)에 있는 모든 문서(기록들)를 삭제 목록에 추가
-            // participantsSnapshot은 위에서 이미 가져온 상태여야 합니다.
-            participantsSnapshot.forEach(doc => {
-                batch.delete(doc.ref); 
-            });
-
-            // 3. 상위 문서(room) 자체를 삭제 목록에 추가
+            const batch = db.batch();
+            participantsSnapshot.forEach(doc => { batch.delete(doc.ref); });
             batch.delete(roomRef);
-
-            // 4. 🔥 배치 실행 (모든 하위 문서 + 상위 문서가 한 번에 증발함)
             await batch.commit();
-            
-            console.log(`💣 방 [${roomId}]의 모든 참가자 데이터와 방 정보가 완전히 삭제되었습니다.`);
+            console.log(`💣 모든 참가자가 삭제하여 방 [${roomId}]이 완전히 증발했습니다.`);
         }
 
+        console.log("✅ 데이터 정리 완료!");
         await exitToLobby(false);
 
     } catch (error) {
-        console.error("❌ 목록에서 삭제 처리 중 오류:", error);
+        console.error("❌ 목록 삭제 중 오류 발생:", error);
+        alert("데이터 삭제 중 오류가 발생했습니다.");
     }
 }
 
