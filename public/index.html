@@ -141,10 +141,16 @@
                 <button class="close_modal">취소</button>
             </div>
             <div class="modal-body">
-                <!-- TODO: 실제 SNS 로그인 연동 필요 -->
                 <div class="sns-login-group">
-                    <button class="sns-btn google">Google</br>계정으로 로그인</button>
-                    <button class="sns-btn apple">Apple</br>계정으로 로그인</button>
+                    <div class="sns-btn google" id="btnGoogleLogin">
+                        <span class="btn-text">Google<br>계정으로 로그인</span>
+                        <div class="inner-btn-group hidden"></div>
+                    </div>
+
+                    <div class="sns-btn apple" id="btnAppleLogin">
+                        <span class="btn-text">Apple<br>계정으로 로그인</span>
+                        <div class="inner-btn-group hidden"></div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -3050,7 +3050,73 @@ document.addEventListener('DOMContentLoaded', () => {
     const sceneUserProfile = document.getElementById('scene-user-profile');
     const btnProfileConfirm = document.getElementById('btn-profile-confirm');
     const btnLogout = document.getElementById('btn-logout');
-    const btnRechargeCoin = document.getElementById('btn-recharge-coin'); 
+    const btnRechargeCoin = document.getElementById('btn-recharge-coin');
+
+    const btnGoogleLogin = document.getElementById('btnGoogleLogin');
+    const btnAppleLogin = document.getElementById('btnAppleLogin');
+
+    /**
+     * 로그인 버튼들을 초기 상태로 되돌리는 함수 (취소 시 사용)
+     */
+    function resetLoginButtons() {
+        [btnGoogleLogin, btnAppleLogin].forEach(btn => {
+            btn.classList.remove('hide', 'loading');
+            btn.querySelector('.inner-btn-group').classList.add('hidden');
+            btn.querySelector('.inner-btn-group').innerHTML = '';
+            
+            const isGoogle = btn.id === 'btnGoogleLogin';
+            btn.querySelector('.btn-text').innerHTML = isGoogle ? 
+                'Google<br>계정으로 로그인' : 'Apple<br>계정으로 로그인';
+        });
+    }
+
+    /**
+     * 로그인 버튼 변신 및 실제 로그인 로직 호출
+     */
+    function handleLoginTransition(platform) {
+        const clicked = platform === 'google' ? btnGoogleLogin : btnAppleLogin;
+        const other = platform === 'google' ? btnAppleLogin : btnGoogleLogin;
+
+        if (clicked.classList.contains('loading')) return;
+
+        // 1. 애니메이션 적용
+        other.classList.add('hide');
+        clicked.classList.add('loading');
+
+        // 2. 텍스트 변경
+        const name = platform === 'google' ? 'Google' : 'Apple';
+        clicked.querySelector('.btn-text').innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
+
+        // 3. 하위 버튼(취소/다시시도) 생성
+        const group = clicked.querySelector('.inner-btn-group');
+        group.classList.remove('hidden');
+        group.innerHTML = `
+            <button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>
+            <button onclick="event.stopPropagation(); window.location.reload();">다시시도</button>
+        `;
+        
+        // 외부에서 접근 가능하도록 전역 등록 (취소 버튼용)
+        window.resetLoginButtons = resetLoginButtons;
+
+        // 4. 0.5초 애니메이션 후 실제 로그인 시도
+        setTimeout(() => {
+            if (platform === 'google') {
+                if (window.AndroidBridge) {
+                    window.AndroidBridge.requestGoogleLogin();
+                } else {
+                    // 기존에 만들어둔 구글 웹 로그인 함수 호출
+                    if (typeof loginWithGoogleWeb === 'function') loginWithGoogleWeb();
+                }
+            } else {
+                // 기존에 만들어둔 애플 웹 로그인 함수 호출
+                if (typeof loginWithAppleWeb === 'function') loginWithAppleWeb();
+            }
+        }, 500);
+    }
+
+    // 이벤트 연결
+    if (btnGoogleLogin) btnGoogleLogin.onclick = () => handleLoginTransition('google');
+    if (btnAppleLogin) btnAppleLogin.onclick = () => handleLoginTransition('apple');
 
     if (btnCreateOpen) {
         btnCreateOpen.onclick = () => {
