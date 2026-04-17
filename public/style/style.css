@@ -1081,6 +1081,9 @@ html, body small{font-size: 70%;}
     overflow: hidden;
     min-width: 120px;
 }
+.sns-login-group:has(.hide) {
+    gap: 0;
+}
 
 /* [애니메이션] 클릭되지 않은 버튼이 사라질 때 */
 .sns-btn.hide {
@@ -1088,8 +1091,12 @@ html, body small{font-size: 70%;}
     pointer-events: none;
     flex: 0;
     width: 0;
+    min-width: 0 !important; /* 최소 너비 해제 */
     margin: 0;
     padding: 0;
+    overflow: hidden;
+    /* transition에 gap 변화도 자연스럽게 포함되도록 설정 */
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* [아이콘] 공통 스타일 */
@@ -1173,6 +1180,7 @@ html, body small{font-size: 70%;}
     color: black;
     padding: 0.25rem 0.5rem;
     border: solid 1px #cecece;
+    text-align: center;
     background: #f5f5f5;
     font-size: 0.8rem;
     cursor: pointer;

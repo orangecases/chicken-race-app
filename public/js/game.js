@@ -3059,82 +3059,46 @@ document.addEventListener('DOMContentLoaded', () => {
      * 로그인 버튼들을 초기 상태로 되돌리는 함수 (취소 시 사용)
      */
     (function() {
-        console.log("🛠️ 로그인 UI 변신 스크립트 가동!");
-
         const gBtn = document.getElementById('btnGoogleLogin');
         const aBtn = document.getElementById('btnAppleLogin');
+        if (!gBtn || !aBtn) return;
 
-        if (!gBtn || !aBtn) {
-            console.error("❌ 오류: HTML에서 로그인 버튼 ID를 찾을 수 없습니다.");
-            return;
-        }
-
-        // 초기화 함수 (취소 시 실행)
         window.resetLoginButtons = function() {
-            console.log("🔄 UI 리셋: 처음 상태로 되돌립니다.");
             [gBtn, aBtn].forEach(btn => {
                 btn.classList.remove('hide', 'loading');
                 const group = btn.querySelector('.inner-btn-group');
-                if (group) {
-                    group.classList.add('hidden');
-                    group.innerHTML = '';
-                }
-                const platform = btn.id.includes('Google') ? 'Google' : 'Apple';
-                const textNode = btn.querySelector('.btn-text');
-                if (textNode) textNode.innerHTML = `${platform}<br>계정으로 로그인`;
+                if (group) { group.classList.add('hidden'); group.innerHTML = ''; }
+                const isG = btn.id.includes('Google');
+                btn.querySelector('.btn-text').innerHTML = isG ? 'Google<br>계정으로 로그인' : 'Apple<br>계정으로 로그인';
             });
         };
 
-        function startLoginTransition(platform) {
-            console.log(`🚀 ${platform} 변신 애니메이션 시작!`);
+        function startTransition(platform) {
             const clicked = platform === 'google' ? gBtn : aBtn;
             const other = platform === 'google' ? aBtn : gBtn;
-
-            if (clicked.classList.contains('loading')) return;
-
-            // 1. 애니메이션 클래스 추가
-            other.classList.add('hide');
+            
+            other.classList.add('hide'); // 여기서 CSS의 gap: 0 로직이 가동됩니다.
             clicked.classList.add('loading');
-
-            // 2. 텍스트 변경
-            const textNode = clicked.querySelector('.btn-text');
-            if (textNode) {
-                const name = platform === 'google' ? 'Google' : 'Apple';
-                // 준기님이 원하신대로 텍스트 업데이트
-                textNode.innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
-            }
-
-            // 3. 내부 버튼(취소/다시시도) 생성
+            
+            const name = platform === 'google' ? 'Google' : 'Apple';
+            clicked.querySelector('.btn-text').innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
+            
             const group = clicked.querySelector('.inner-btn-group');
-            if (group) {
-                group.classList.remove('hidden');
-                group.innerHTML = `
-                    <button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>
-                    <button onclick="event.stopPropagation(); location.reload();">다시시도</button>
-                `;
-            }
+            group.classList.remove('hidden');
+            group.innerHTML = `<button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>`;
 
-            // 4. 실제 로그인 함수 호출 (0.5초 뒤)
             setTimeout(() => {
                 if (platform === 'google') {
-                    // 안드로이드 앱이라면 앱 브릿지 호출
-                    if (window.AndroidBridge) {
-                        window.AndroidBridge.requestGoogleLogin();
-                    } else {
-                        // 웹 브라우저라면 game.js 1159행에 있는 함수 호출
-                        if (typeof loginWithGoogle === 'function') loginWithGoogle(); 
-                    }
+                    if (window.AndroidBridge) window.AndroidBridge.requestGoogleLogin();
+                    else loginWithGoogle(); // 👈 함수 이름 확인됨!
                 } else {
-                    // 애플 로그인도 1184행에 있는 진짜 이름 호출
-                    if (typeof loginWithApple === 'function') loginWithApple();
+                    loginWithApple(); // 👈 함수 이름 확인됨!
                 }
-            }, 500); // 500ms(0.5초) 동안 애니메이션을 보여준 뒤 로그인을 시작함
+            }, 500);
         }
 
-        // 클릭 이벤트 연결 (기존 1205행의 중복 코드는 지우고 이것만 남기세요)
-        gBtn.onclick = () => startLoginTransition('google');
-        aBtn.onclick = () => startLoginTransition('apple');
-
+        gBtn.onclick = () => startTransition('google');
+        aBtn.onclick = () => startTransition('apple');
     })();
 
     if (btnCreateOpen) {
@@ -3158,15 +3122,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnMember) {
         btnMember.onclick = () => {
-            if (isLoggedIn && currentUser) {
-                // 이미 로그인 상태면 프로필 모달 표시
-                showUserProfile();
-            } else {
-                // 로그아웃 상태면 로그인 선택창(구글/애플 버튼 있는 창) 표시
-                const authMsg = sceneAuth.querySelector('.auth-message');
-                if (authMsg) authMsg.style.display = 'none';
-                sceneAuth.classList.remove('hidden');
+            // [추가] 모달을 열 때마다 로그인 버튼들을 초기 상태로 리셋합니다.
+            if (typeof window.resetLoginButtons === 'function') {
+                window.resetLoginButtons();
             }
+            modalLogin.classList.remove('hidden');
         };
     }
 
@@ -3474,16 +3434,17 @@ window.onNativeLoginSuccess = function(token) {
         .then((result) => {
             console.log("✅ 로그인 성공!");
             
-            // 1. 로그인 모달 닫기
-            document.getElementById('scene-auth').classList.add('hidden');
+            // 1. 로그인 모달(scene-auth)을 닫습니다.
+            const authScene = document.getElementById('scene-auth');
+            if (authScene) authScene.classList.add('hidden');
             
-            // 2. [추가] 준기님이 원하셨던 '사용자 프로필 화면' 바로 띄우기
+            // 2. [추가] 준기님이 원하셨던 '사용자 프로필 화면'으로 바로 이동!
             setTimeout(() => {
-                showUserProfile(); 
-            }, 500);
+                if (typeof showUserProfile === 'function') showUserProfile();
+            }, 300);
         })
         .catch((error) => {
             console.error("❌ 인증 실패:", error);
-            if (window.resetLoginButtons) window.resetLoginButtons(); // 실패 시 UI 원복
+            if (window.resetLoginButtons) window.resetLoginButtons(); 
         });
 };
