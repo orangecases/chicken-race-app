@@ -1115,6 +1115,8 @@ html, body small{font-size: 70%;}
 .sns-btn.loading::before {
     width: 4rem;
     height: 4rem;
+    pointer-events: none; 
+    cursor: default;
 }
 
 .sns-btn.google { background-color: #FFFFFF; color: #191919; }
@@ -1162,6 +1164,8 @@ html, body small{font-size: 70%;}
     border-radius: 6px;
     text-align: center;
     font-weight: bold;
+    pointer-events: auto; 
+    cursor: pointer;
 }
 
 .inner-btn-group button:active {

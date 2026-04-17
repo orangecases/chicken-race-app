@@ -3061,12 +3061,13 @@ document.addEventListener('DOMContentLoaded', () => {
     (function() {
         const gBtn = document.getElementById('btnGoogleLogin');
         const aBtn = document.getElementById('btnAppleLogin');
-        const group = document.querySelector('.sns-login-group'); // 부모 컨테이너
+        const group = document.querySelector('.sns-login-group');
 
         if (!gBtn || !aBtn) return;
 
+        // UI 리셋 함수
         window.resetLoginButtons = function() {
-            if (group) group.style.gap = '0.75rem'; // 리셋 시 gap 복구
+            if (group) group.style.gap = '0.75rem'; 
             [gBtn, aBtn].forEach(btn => {
                 btn.classList.remove('hide', 'loading');
                 const inner = btn.querySelector('.inner-btn-group');
@@ -3076,29 +3077,49 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
+        // 실제 로그인 호출부 (중복 방지를 위해 분리)
+        function callActualLogin(platform) {
+            console.log(`📡 ${platform} 로그인 실제 호출`);
+            if (platform === 'google') {
+                if (window.AndroidBridge) window.AndroidBridge.requestGoogleLogin();
+                else if (typeof loginWithGoogle === 'function') loginWithGoogle();
+            } else {
+                if (typeof loginWithApple === 'function') loginWithApple();
+            }
+        }
+
         function startTransition(platform) {
             const clicked = platform === 'google' ? gBtn : aBtn;
             const other = platform === 'google' ? aBtn : gBtn;
             
-            // 1. 부모의 gap을 0으로 만들어 중앙 정렬을 맞춥니다.
+            // [필수] 로딩 중이면 클릭 무시 (중복 방지)
+            if (clicked.classList.contains('loading')) return;
+
             if (group) group.style.gap = '0';
-            
             other.classList.add('hide'); 
             clicked.classList.add('loading');
             
-            clicked.querySelector('.btn-text').innerHTML = `${platform === 'google' ? 'Google' : 'Apple'} 계정으로<br><span>로그인 중입니다.</span>`;
+            const name = platform === 'google' ? 'Google' : 'Apple';
+            clicked.querySelector('.btn-text').innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
             
             const inner = clicked.querySelector('.inner-btn-group');
             inner.classList.remove('hidden');
-            inner.innerHTML = `<button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>`;
+            
+            // 다시 시도 버튼 부활!
+            inner.innerHTML = `
+                <button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>
+                <button id="retry-login-btn">다시 시도</button>
+            `;
 
+            // 다시 시도 버튼 이벤트 연결
+            inner.querySelector('#retry-login-btn').onclick = (e) => {
+                e.stopPropagation();
+                callActualLogin(platform);
+            };
+
+            // 0.5초 애니메이션 후 첫 실행
             setTimeout(() => {
-                if (platform === 'google') {
-                    if (window.AndroidBridge) window.AndroidBridge.requestGoogleLogin();
-                    else if (typeof loginWithGoogle === 'function') loginWithGoogle();
-                } else {
-                    if (typeof loginWithApple === 'function') loginWithApple();
-                }
+                callActualLogin(platform);
             }, 500);
         }
 
