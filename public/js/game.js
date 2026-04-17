@@ -3058,65 +3058,78 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * 로그인 버튼들을 초기 상태로 되돌리는 함수 (취소 시 사용)
      */
-    function resetLoginButtons() {
-        [btnGoogleLogin, btnAppleLogin].forEach(btn => {
-            btn.classList.remove('hide', 'loading');
-            btn.querySelector('.inner-btn-group').classList.add('hidden');
-            btn.querySelector('.inner-btn-group').innerHTML = '';
-            
-            const isGoogle = btn.id === 'btnGoogleLogin';
-            btn.querySelector('.btn-text').innerHTML = isGoogle ? 
-                'Google<br>계정으로 로그인' : 'Apple<br>계정으로 로그인';
-        });
-    }
+    (function() {
+        console.log("🛠️ 로그인 UI 스크립트 로드됨");
 
-    /**
-     * 로그인 버튼 변신 및 실제 로그인 로직 호출
-     */
-    function handleLoginTransition(platform) {
-        const clicked = platform === 'google' ? btnGoogleLogin : btnAppleLogin;
-        const other = platform === 'google' ? btnAppleLogin : btnGoogleLogin;
+        const gBtn = document.getElementById('btnGoogleLogin');
+        const aBtn = document.getElementById('btnAppleLogin');
 
-        if (clicked.classList.contains('loading')) return;
+        if (!gBtn || !aBtn) {
+            console.error("❌ 로그인 버튼을 찾을 수 없습니다. HTML의 ID를 확인하세요.");
+            return;
+        }
 
-        // 1. 애니메이션 적용
-        other.classList.add('hide');
-        clicked.classList.add('loading');
-
-        // 2. 텍스트 변경
-        const name = platform === 'google' ? 'Google' : 'Apple';
-        clicked.querySelector('.btn-text').innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
-
-        // 3. 하위 버튼(취소/다시시도) 생성
-        const group = clicked.querySelector('.inner-btn-group');
-        group.classList.remove('hidden');
-        group.innerHTML = `
-            <button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>
-            <button onclick="event.stopPropagation(); window.location.reload();">다시시도</button>
-        `;
-        
-        // 외부에서 접근 가능하도록 전역 등록 (취소 버튼용)
-        window.resetLoginButtons = resetLoginButtons;
-
-        // 4. 0.5초 애니메이션 후 실제 로그인 시도
-        setTimeout(() => {
-            if (platform === 'google') {
-                if (window.AndroidBridge) {
-                    window.AndroidBridge.requestGoogleLogin();
-                } else {
-                    // 기존에 만들어둔 구글 웹 로그인 함수 호출
-                    if (typeof loginWithGoogleWeb === 'function') loginWithGoogleWeb();
+        // 초기화 함수 (전역으로 등록하여 어디서든 쓸 수 있게 함)
+        window.resetLoginButtons = function() {
+            console.log("🔄 UI 초기화 실행");
+            [gBtn, aBtn].forEach(btn => {
+                btn.classList.remove('hide', 'loading');
+                const group = btn.querySelector('.inner-btn-group');
+                if (group) {
+                    group.classList.add('hidden');
+                    group.innerHTML = '';
                 }
-            } else {
-                // 기존에 만들어둔 애플 웹 로그인 함수 호출
-                if (typeof loginWithAppleWeb === 'function') loginWithAppleWeb();
-            }
-        }, 500);
-    }
+                const platform = btn.id.includes('Google') ? 'Google' : 'Apple';
+                const textNode = btn.querySelector('.btn-text');
+                if (textNode) textNode.innerHTML = `${platform}<br>계정으로 로그인`;
+            });
+        };
 
-    // 이벤트 연결
-    if (btnGoogleLogin) btnGoogleLogin.onclick = () => handleLoginTransition('google');
-    if (btnAppleLogin) btnAppleLogin.onclick = () => handleLoginTransition('apple');
+        function startLoginTransition(platform) {
+            console.log(`🚀 ${platform} 로그인 시도됨`);
+            const clicked = platform === 'google' ? gBtn : aBtn;
+            const other = platform === 'google' ? aBtn : gBtn;
+
+            if (clicked.classList.contains('loading')) return;
+
+            // 1. 클래스 변경 (애니메이션 시작)
+            other.classList.add('hide');
+            clicked.classList.add('loading');
+
+            // 2. 텍스트 변경
+            const textNode = clicked.querySelector('.btn-text');
+            if (textNode) {
+                const name = platform === 'google' ? 'Google' : 'Apple';
+                textNode.innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
+            }
+
+            // 3. 내부 버튼 생성
+            const group = clicked.querySelector('.inner-btn-group');
+            if (group) {
+                group.classList.remove('hidden');
+                group.innerHTML = `
+                    <button onclick="event.stopPropagation(); window.resetLoginButtons();" style="all:unset; min-width:4rem; color:black; padding:0.4rem; border:1px solid #cecece; background:#f5f5f5; font-size:0.8rem; border-radius:4px; margin:5px; cursor:pointer;">취소</button>
+                    <button onclick="event.stopPropagation(); location.reload();" style="all:unset; min-width:4rem; color:black; padding:0.4rem; border:1px solid #cecece; background:#f5f5f5; font-size:0.8rem; border-radius:4px; margin:5px; cursor:pointer;">다시시도</button>
+                `;
+            }
+
+            // 4. 실제 로그인 실행 (0.5초 뒤)
+            setTimeout(() => {
+                console.log(`📡 ${platform} 실제 로그인 함수 호출`);
+                if (platform === 'google') {
+                    if (window.AndroidBridge) window.AndroidBridge.requestGoogleLogin();
+                    else if (typeof loginWithGoogleWeb === 'function') loginWithGoogleWeb();
+                } else {
+                    if (typeof loginWithAppleWeb === 'function') loginWithAppleWeb();
+                }
+            }, 500);
+        }
+
+        // 클릭 이벤트 연결
+        gBtn.onclick = () => startLoginTransition('google');
+        aBtn.onclick = () => startLoginTransition('apple');
+
+    })();
 
     if (btnCreateOpen) {
         btnCreateOpen.onclick = () => {
