@@ -3116,19 +3116,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 4. 실제 로그인 함수 호출 (0.5초 뒤)
             setTimeout(() => {
-                console.log(`📡 ${platform} 실제 로그인 함수 호출 시점`);
                 if (platform === 'google') {
+                    // 안드로이드 앱이라면 앱 브릿지 호출
                     if (window.AndroidBridge) {
                         window.AndroidBridge.requestGoogleLogin();
                     } else {
-                        // 💡 중요: loginWithGoogleWeb 대신 진짜 이름인 loginWithGoogle 호출!
-                        if (typeof loginWithGoogle === 'function') loginWithGoogle();
+                        // 웹 브라우저라면 game.js 1159행에 있는 함수 호출
+                        if (typeof loginWithGoogle === 'function') loginWithGoogle(); 
                     }
                 } else {
-                    // 💡 중요: loginWithAppleWeb 대신 진짜 이름인 loginWithApple 호출!
+                    // 애플 로그인도 1184행에 있는 진짜 이름 호출
                     if (typeof loginWithApple === 'function') loginWithApple();
                 }
-            }, 500);
+            }, 500); // 500ms(0.5초) 동안 애니메이션을 보여준 뒤 로그인을 시작함
         }
 
         // 클릭 이벤트 연결 (기존 1205행의 중복 코드는 지우고 이것만 남기세요)
@@ -3169,16 +3169,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     }
-
-    document.querySelectorAll('.sns-btn').forEach(btn => {
-        btn.onclick = () => {
-            if (btn.classList.contains('google')) {
-                loginWithGoogle();
-            } else if (btn.classList.contains('apple')) {
-                loginWithApple();
-            }
-        };
-    });
 
     if (btnProfileConfirm) {
         btnProfileConfirm.onclick = () => {
@@ -3477,18 +3467,23 @@ document.addEventListener('DOMContentLoaded', () => {
  * @param {string} token - 안드로이드에서 건네준 Google ID 토큰
  */
 window.onNativeLoginSuccess = function(token) {
-    console.log("🎁 앱에서 로그인 토큰 도착! 파이어베이스 인증을 시작합니다.");
+    console.log("🎁 앱에서 로그인 토큰 도착!");
     
-    // 안드로이드에서 받은 토큰으로 파이어베이스 로그인을 완료합니다.
     const credential = firebase.auth.GoogleAuthProvider.credential(token);
     firebase.auth().signInWithCredential(credential)
         .then((result) => {
-            console.log("✅ 네이티브 브릿지 로그인 성공:", result.user.displayName);
-            // 이 호출이 성공하면 firebase.auth().onAuthStateChanged가 실행되어 
-            // 자동으로 loadUserData(user)가 작동합니다.
+            console.log("✅ 로그인 성공!");
+            
+            // 1. 로그인 모달 닫기
+            document.getElementById('scene-auth').classList.add('hidden');
+            
+            // 2. [추가] 준기님이 원하셨던 '사용자 프로필 화면' 바로 띄우기
+            setTimeout(() => {
+                showUserProfile(); 
+            }, 500);
         })
         .catch((error) => {
-            console.error("❌ 네이티브 인증 실패:", error);
-            alert("인증 처리 중 오류가 발생했습니다.");
+            console.error("❌ 인증 실패:", error);
+            if (window.resetLoginButtons) window.resetLoginButtons(); // 실패 시 UI 원복
         });
 };

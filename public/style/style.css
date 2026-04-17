@@ -1139,7 +1139,7 @@ html, body small{font-size: 70%;}
 }
 
 .inner-btn-group.hidden {
-    display: none;
+    display: none !important;
     opacity: 0;
 }
 
