@@ -3061,13 +3061,16 @@ document.addEventListener('DOMContentLoaded', () => {
     (function() {
         const gBtn = document.getElementById('btnGoogleLogin');
         const aBtn = document.getElementById('btnAppleLogin');
+        const group = document.querySelector('.sns-login-group'); // 부모 컨테이너
+
         if (!gBtn || !aBtn) return;
 
         window.resetLoginButtons = function() {
+            if (group) group.style.gap = '0.75rem'; // 리셋 시 gap 복구
             [gBtn, aBtn].forEach(btn => {
                 btn.classList.remove('hide', 'loading');
-                const group = btn.querySelector('.inner-btn-group');
-                if (group) { group.classList.add('hidden'); group.innerHTML = ''; }
+                const inner = btn.querySelector('.inner-btn-group');
+                if (inner) { inner.classList.add('hidden'); inner.innerHTML = ''; }
                 const isG = btn.id.includes('Google');
                 btn.querySelector('.btn-text').innerHTML = isG ? 'Google<br>계정으로 로그인' : 'Apple<br>계정으로 로그인';
             });
@@ -3077,22 +3080,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const clicked = platform === 'google' ? gBtn : aBtn;
             const other = platform === 'google' ? aBtn : gBtn;
             
-            other.classList.add('hide'); // 여기서 CSS의 gap: 0 로직이 가동됩니다.
+            // 1. 부모의 gap을 0으로 만들어 중앙 정렬을 맞춥니다.
+            if (group) group.style.gap = '0';
+            
+            other.classList.add('hide'); 
             clicked.classList.add('loading');
             
-            const name = platform === 'google' ? 'Google' : 'Apple';
-            clicked.querySelector('.btn-text').innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
+            clicked.querySelector('.btn-text').innerHTML = `${platform === 'google' ? 'Google' : 'Apple'} 계정으로<br><span>로그인 중입니다.</span>`;
             
-            const group = clicked.querySelector('.inner-btn-group');
-            group.classList.remove('hidden');
-            group.innerHTML = `<button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>`;
+            const inner = clicked.querySelector('.inner-btn-group');
+            inner.classList.remove('hidden');
+            inner.innerHTML = `<button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>`;
 
             setTimeout(() => {
                 if (platform === 'google') {
                     if (window.AndroidBridge) window.AndroidBridge.requestGoogleLogin();
-                    else loginWithGoogle(); // 👈 함수 이름 확인됨!
+                    else if (typeof loginWithGoogle === 'function') loginWithGoogle();
                 } else {
-                    loginWithApple(); // 👈 함수 이름 확인됨!
+                    if (typeof loginWithApple === 'function') loginWithApple();
                 }
             }, 500);
         }
@@ -3121,14 +3126,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCreateCancel) btnCreateCancel.onclick = () => sceneCreateRoom.classList.add('hidden');
 
     if (btnMember) {
-        btnMember.onclick = () => {
-            // [추가] 모달을 열 때마다 로그인 버튼들을 초기 상태로 리셋합니다.
-            if (typeof window.resetLoginButtons === 'function') {
-                window.resetLoginButtons();
-            }
-            modalLogin.classList.remove('hidden');
-        };
-    }
+    btnMember.onclick = () => {
+        // 1. 모달을 열 때마다 버튼 UI를 초기 상태로 리셋
+        if (typeof window.resetLoginButtons === 'function') {
+            window.resetLoginButtons();
+        }
+        
+        // 2. 변수 대신 ID로 직접 찾아서 모달을 엽니다 (에러 방지)
+        const authModal = document.getElementById('scene-auth');
+        if (authModal) authModal.classList.remove('hidden');
+    };
+}
 
     if (btnProfileConfirm) {
         btnProfileConfirm.onclick = () => {

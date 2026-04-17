@@ -1091,11 +1091,11 @@ html, body small{font-size: 70%;}
     pointer-events: none;
     flex: 0;
     width: 0;
-    min-width: 0 !important; /* 최소 너비 해제 */
+    min-width: 0 !important; /* 최소 너비 무시 */
     margin: 0;
     padding: 0;
     overflow: hidden;
-    /* transition에 gap 변화도 자연스럽게 포함되도록 설정 */
+    /* gap이 사라지는 속도와 버튼이 줄어드는 속도를 맞춥니다 */
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -1132,7 +1132,7 @@ html, body small{font-size: 70%;}
     display: block;
     font-size: 0.8rem;
     font-weight: normal;
-    margin-top: 4px;
+    margin-top: 5px;
     opacity: 0.8;
 }
 
