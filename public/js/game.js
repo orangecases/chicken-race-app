@@ -3059,19 +3059,19 @@ document.addEventListener('DOMContentLoaded', () => {
      * 로그인 버튼들을 초기 상태로 되돌리는 함수 (취소 시 사용)
      */
     (function() {
-        console.log("🛠️ 로그인 UI 스크립트 로드됨");
+        console.log("🛠️ 로그인 UI 변신 스크립트 가동!");
 
         const gBtn = document.getElementById('btnGoogleLogin');
         const aBtn = document.getElementById('btnAppleLogin');
 
         if (!gBtn || !aBtn) {
-            console.error("❌ 로그인 버튼을 찾을 수 없습니다. HTML의 ID를 확인하세요.");
+            console.error("❌ 오류: HTML에서 로그인 버튼 ID를 찾을 수 없습니다.");
             return;
         }
 
-        // 초기화 함수 (전역으로 등록하여 어디서든 쓸 수 있게 함)
+        // 초기화 함수 (취소 시 실행)
         window.resetLoginButtons = function() {
-            console.log("🔄 UI 초기화 실행");
+            console.log("🔄 UI 리셋: 처음 상태로 되돌립니다.");
             [gBtn, aBtn].forEach(btn => {
                 btn.classList.remove('hide', 'loading');
                 const group = btn.querySelector('.inner-btn-group');
@@ -3086,13 +3086,13 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         function startLoginTransition(platform) {
-            console.log(`🚀 ${platform} 로그인 시도됨`);
+            console.log(`🚀 ${platform} 변신 애니메이션 시작!`);
             const clicked = platform === 'google' ? gBtn : aBtn;
             const other = platform === 'google' ? aBtn : gBtn;
 
             if (clicked.classList.contains('loading')) return;
 
-            // 1. 클래스 변경 (애니메이션 시작)
+            // 1. 애니메이션 클래스 추가
             other.classList.add('hide');
             clicked.classList.add('loading');
 
@@ -3100,32 +3100,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const textNode = clicked.querySelector('.btn-text');
             if (textNode) {
                 const name = platform === 'google' ? 'Google' : 'Apple';
+                // 준기님이 원하신대로 텍스트 업데이트
                 textNode.innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
             }
 
-            // 3. 내부 버튼 생성
+            // 3. 내부 버튼(취소/다시시도) 생성
             const group = clicked.querySelector('.inner-btn-group');
             if (group) {
                 group.classList.remove('hidden');
                 group.innerHTML = `
-                    <button onclick="event.stopPropagation(); window.resetLoginButtons();" style="all:unset; min-width:4rem; color:black; padding:0.4rem; border:1px solid #cecece; background:#f5f5f5; font-size:0.8rem; border-radius:4px; margin:5px; cursor:pointer;">취소</button>
-                    <button onclick="event.stopPropagation(); location.reload();" style="all:unset; min-width:4rem; color:black; padding:0.4rem; border:1px solid #cecece; background:#f5f5f5; font-size:0.8rem; border-radius:4px; margin:5px; cursor:pointer;">다시시도</button>
+                    <button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>
+                    <button onclick="event.stopPropagation(); location.reload();">다시시도</button>
                 `;
             }
 
-            // 4. 실제 로그인 실행 (0.5초 뒤)
+            // 4. 실제 로그인 함수 호출 (0.5초 뒤)
             setTimeout(() => {
-                console.log(`📡 ${platform} 실제 로그인 함수 호출`);
+                console.log(`📡 ${platform} 실제 로그인 함수 호출 시점`);
                 if (platform === 'google') {
-                    if (window.AndroidBridge) window.AndroidBridge.requestGoogleLogin();
-                    else if (typeof loginWithGoogleWeb === 'function') loginWithGoogleWeb();
+                    if (window.AndroidBridge) {
+                        window.AndroidBridge.requestGoogleLogin();
+                    } else {
+                        // 💡 중요: loginWithGoogleWeb 대신 진짜 이름인 loginWithGoogle 호출!
+                        if (typeof loginWithGoogle === 'function') loginWithGoogle();
+                    }
                 } else {
-                    if (typeof loginWithAppleWeb === 'function') loginWithAppleWeb();
+                    // 💡 중요: loginWithAppleWeb 대신 진짜 이름인 loginWithApple 호출!
+                    if (typeof loginWithApple === 'function') loginWithApple();
                 }
             }, 500);
         }
 
-        // 클릭 이벤트 연결
+        // 클릭 이벤트 연결 (기존 1205행의 중복 코드는 지우고 이것만 남기세요)
         gBtn.onclick = () => startLoginTransition('google');
         aBtn.onclick = () => startLoginTransition('apple');
 
