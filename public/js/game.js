@@ -3126,17 +3126,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCreateCancel) btnCreateCancel.onclick = () => sceneCreateRoom.classList.add('hidden');
 
     if (btnMember) {
-    btnMember.onclick = () => {
-        // 1. 모달을 열 때마다 버튼 UI를 초기 상태로 리셋
-        if (typeof window.resetLoginButtons === 'function') {
-            window.resetLoginButtons();
-        }
-        
-        // 2. 변수 대신 ID로 직접 찾아서 모달을 엽니다 (에러 방지)
-        const authModal = document.getElementById('scene-auth');
-        if (authModal) authModal.classList.remove('hidden');
-    };
-}
+        btnMember.onclick = () => {
+            if (isLoggedIn && currentUser) {
+                // 1. 로그인 상태면 바로 프로필 화면을 띄웁니다.
+                showUserProfile();
+            } else {
+                // 2. 로그아웃 상태면 UI를 리셋하고 로그인 모달을 띄웁니다.
+                if (window.resetLoginButtons) window.resetLoginButtons();
+                
+                // ReferenceError 방지를 위해 ID로 직접 찾거나 sceneAuth 변수 사용
+                const authScene = document.getElementById('scene-auth');
+                if (authScene) {
+                    const authMsg = authScene.querySelector('.auth-message');
+                    if (authMsg) authMsg.style.display = 'none';
+                    authScene.classList.remove('hidden');
+                }
+            }
+        };
+    }
 
     if (btnProfileConfirm) {
         btnProfileConfirm.onclick = () => {
@@ -3436,23 +3443,17 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 window.onNativeLoginSuccess = function(token) {
     console.log("🎁 앱에서 로그인 토큰 도착!");
-    
     const credential = firebase.auth.GoogleAuthProvider.credential(token);
     firebase.auth().signInWithCredential(credential)
         .then((result) => {
             console.log("✅ 로그인 성공!");
-            
-            // 1. 로그인 모달(scene-auth)을 닫습니다.
-            const authScene = document.getElementById('scene-auth');
-            if (authScene) authScene.classList.add('hidden');
-            
-            // 2. [추가] 준기님이 원하셨던 '사용자 프로필 화면'으로 바로 이동!
-            setTimeout(() => {
-                if (typeof showUserProfile === 'function') showUserProfile();
-            }, 300);
+            // 1. 로그인 모달 닫기
+            document.getElementById('scene-auth').classList.add('hidden');
+            // 2. 사용자 프로필 화면 즉시 띄우기
+            setTimeout(() => { showUserProfile(); }, 300);
         })
         .catch((error) => {
             console.error("❌ 인증 실패:", error);
-            if (window.resetLoginButtons) window.resetLoginButtons(); 
+            if (window.resetLoginButtons) window.resetLoginButtons();
         });
 };
