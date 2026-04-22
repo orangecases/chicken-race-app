@@ -2498,21 +2498,26 @@ function loginWithGoogle() {
 /**
  * [신규] 애플 로그인 함수
  */
-function loginWithApple() {
+async function loginWithApple() {
+    console.log("🍎 애플 로그인 시도 중...");
     const provider = new firebase.auth.OAuthProvider('apple.com');
     provider.addScope('email');
     provider.addScope('name');
 
-    firebase.auth().signInWithPopup(provider)
-        .then((result) => {
-            console.log("✅ 애플 로그인 성공!");
-        })
-        .catch((error) => {
-            console.error("❌ 애플 로그인 실패:", error.code, error.message);
-            if (error.code !== 'auth/popup-closed-by-user') {
-                alert("애플 로그인 중 오류가 발생했습니다.");
-            }
-        });
+    try {
+        // 1. [핵심] 로그인 정보를 세션이 아닌 로컬 저장소에 고정 (Missing State 에러 방지)
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+        // 2. [핵심] 웹뷰 환경에서는 팝업 대신 리다이렉트 방식을 사용
+        console.log("🚀 리다이렉트 방식으로 애플 로그인 시작");
+        return firebase.auth().signInWithRedirect(provider);
+    } catch (error) {
+        console.error("❌ 애플 로그인 설정 에러:", error.code, error.message);
+        alert("로그인 준비 중 오류가 발생했습니다: " + error.message);
+
+        // 에러 발생 시 UI 리셋 (필요한 경우)
+        if (window.resetLoginButtons) window.resetLoginButtons();
+    }
 }
 
 /**
@@ -2706,6 +2711,20 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 애플 로그인 리다이렉트 후 돌아온 결과가 있는지 확인
+    firebase.auth().getRedirectResult()
+        .then((result) => {
+            if (result.user) {
+                console.log("✅ 애플 로그인 성공!");
+                if (window.resetLoginButtons) window.resetLoginButtons();
+                document.getElementById('scene-auth').classList.add('hidden');
+                if (typeof showUserProfile === 'function') showUserProfile();
+            }
+        })
+        .catch((error) => {
+            console.error("❌ 리다이렉트 처리 에러:", error.message);
+        });
+
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             loadUserData(user);
