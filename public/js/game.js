@@ -2704,28 +2704,30 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 💡 리다이렉트(화면 전환) 로그인의 결과를 받아오는 핵심 코드
+    // 💡 페이지 로드 시 로그인 결과 확인
     firebase.auth().getRedirectResult()
         .then((result) => {
             if (result.user) {
+                console.log("🍎 애플 로그인 성공!");
                 isLoggedIn = true;
                 currentUser = result.user;
-                console.log("🍎 리다이렉트 로그인 성공!");
-                // 💡 [수정] 성공 즉시 유저 정보 화면으로 전환
+                // 💡 [핵심] 로그인 성공 즉시 유저 정보 화면으로 갱신
                 if (typeof showUserInfo === 'function') showUserInfo();
             }
         }).catch((error) => {
-            if (error.code !== 'auth/no-auth-event') alert("오류: " + error.message);
+            console.error("❌ 로그인 처리 에러:", error.message);
         });
 
-    // 기존 onAuthStateChanged는 유지하되, 내부에서 UI를 갱신하도록 보강
+    // 💡 로그인 상태 실시간 감시
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
+            console.log("👤 로그인 상태 유지:", user.email);
             isLoggedIn = true;
             currentUser = user;
-            // 💡 [수정] 이미 멤버 창이 열려있다면 즉시 유저 정보로 교체
-            const modal = document.getElementById('modal-member');
-            if (modal && modal.classList.contains('active')) {
+
+            // 💡 [핵심] 멤버 창이 열려있는 상태에서 로그인이 확정되면 화면을 바로 바꿔줌
+            const modalMember = document.getElementById('modal-member');
+            if (modalMember && modalMember.classList.contains('active')) {
                 if (typeof showUserInfo === 'function') showUserInfo();
             }
         } else {
