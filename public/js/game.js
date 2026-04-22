@@ -2499,24 +2499,19 @@ function loginWithGoogle() {
  * [신규] 애플 로그인 함수
  */
 async function loginWithApple() {
-    console.log("🍎 애플 로그인 시도 중...");
     const provider = new firebase.auth.OAuthProvider('apple.com');
     provider.addScope('email');
     provider.addScope('name');
 
     try {
-        // 1. [핵심] 로그인 정보를 세션이 아닌 로컬 저장소에 고정 (Missing State 에러 방지)
+        // [핵심] 로그인 정보를 세션이 아닌 로컬 저장소에 고정 (Missing State 방지)
         await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-
-        // 2. [핵심] 웹뷰 환경에서는 팝업 대신 리다이렉트 방식을 사용
         console.log("🚀 리다이렉트 방식으로 애플 로그인 시작");
         return firebase.auth().signInWithRedirect(provider);
     } catch (error) {
-        console.error("❌ 애플 로그인 설정 에러:", error.code, error.message);
-        alert("로그인 준비 중 오류가 발생했습니다: " + error.message);
-
-        // 에러 발생 시 UI 리셋 (필요한 경우)
-        if (window.resetLoginButtons) window.resetLoginButtons();
+        // 에러 발생 시 상세 내용을 찍어줍니다.
+        console.error("❌ 상세 에러:", error);
+        alert("애플 로그인 준비 중 오류: " + error.code);
     }
 }
 
