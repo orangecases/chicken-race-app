@@ -2722,14 +2722,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // 기존 onAuthStateChanged는 유지하되, 내부에서 UI를 갱신하도록 보강
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
+            console.log("👤 로그인 성공 상태:", user.email);
             isLoggedIn = true;
             currentUser = user;
-            console.log("👤 로그인 상태 유지 중:", user.email);
+
+            // 💡 [핵심] 로그인이 확인되는 순간, 현재 열려있는 로그인 팝업이 있다면 자동으로 닫거나
+            // 사용자 정보 화면으로 즉시 갱신하는 로직을 추가합니다.
+            if (typeof showUserInfo === 'function' && document.getElementById('modal-member').classList.contains('active')) {
+                showUserInfo(); // 이미 창이 떠 있다면 즉시 유저 정보로 교체
+            }
         } else {
+            console.log("📴 로그아웃 상태");
             isLoggedIn = false;
             currentUser = null;
+
+            // 💡 [핵심] 로그아웃되면 열려있는 모든 멤버 창을 닫고 메인으로 보냅니다.
+            const modalMember = document.getElementById('modal-member');
+            if (modalMember) modalMember.classList.remove('active');
         }
     });
+    
+    // 2. 로그아웃 함수 수정
+    function handleLogout() {
+        firebase.auth().signOut().then(() => {
+            alert("로그아웃 되었습니다.");
+            // 💡 여기서 강제로 UI를 리셋합니다.
+            location.reload(); // 가장 확실한 방법은 페이지를 새로고침하는 것입니다.
+        }).catch((error) => {
+            alert("로그아웃 중 오류 발생: " + error.message);
+        });
+    }
     // [수정] 로컬 스토리지에서 '내 기록'을 불러오는 로직을 제거합니다.
     // 이제 모든 기록은 onAuthStateChanged를 통해 Firestore에서 가져옵니다.
     renderMyRecordList(); // 초기에는 "기록 없음" 상태로 렌더링됩니다.
