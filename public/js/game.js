@@ -2735,15 +2735,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 2. 로그아웃 함수 수정
-    function handleLogout() {
+    window.handleLogout = function() {
+        console.log("👋 로그아웃 시도 중...");
         firebase.auth().signOut().then(() => {
             alert("로그아웃 되었습니다.");
-            // 💡 여기서 강제로 UI를 리셋합니다.
-            location.reload(); // 가장 확실한 방법은 페이지를 새로고침하는 것입니다.
+            // 💡 페이지를 새로고침하여 모든 UI 상태를 초기화합니다.
+            location.reload();
         }).catch((error) => {
             alert("로그아웃 중 오류 발생: " + error.message);
         });
-    }
+    };
 
     // [수정] 로컬 스토리지에서 '내 기록'을 불러오는 로직을 제거합니다.
     // 이제 모든 기록은 onAuthStateChanged를 통해 Firestore에서 가져옵니다.
