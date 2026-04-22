@@ -2504,14 +2504,12 @@ async function loginWithApple() {
     provider.addScope('name');
 
     try {
-        // [핵심] 로그인 정보를 세션이 아닌 로컬 저장소에 고정 (Missing State 방지)
+        // 💡 중요: 기기에 로그인 시도 기록을 강제로 저장합니다.
         await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        console.log("🚀 리다이렉트 방식으로 애플 로그인 시작");
+        // 💡 앱/웹 공용으로 가장 안정적인 리다이렉트 방식 사용
         return firebase.auth().signInWithRedirect(provider);
     } catch (error) {
-        // 에러 발생 시 상세 내용을 찍어줍니다.
-        console.error("❌ 상세 에러:", error);
-        alert("애플 로그인 준비 중 오류: " + error.code);
+        alert("애플 로그인 오류: " + error.message);
     }
 }
 
@@ -2706,30 +2704,27 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 애플 로그인 리다이렉트 후 돌아온 결과가 있는지 확인
+    // 💡 리다이렉트(화면 전환) 로그인의 결과를 받아오는 핵심 코드
     firebase.auth().getRedirectResult()
         .then((result) => {
             if (result.user) {
-                console.log("🍎 애플 리다이렉트 로그인 성공:", result.user);
-                // 로그인이 성공하면 전역 변수를 즉시 업데이트
+                console.log("🍎 애플 로그인 결과 수신 성공!");
+                // 전역 변수 업데이트
                 isLoggedIn = true;
                 currentUser = result.user;
-                // UI 업데이트 함수가 있다면 여기서 호출 (예: updateUI())
+                // UI 업데이트 (유저 정보 화면으로 전환하는 함수 호출)
+                if (typeof updateUI === 'function') updateUI();
             }
-        })
-        .catch((error) => {
-            if (error.code !== 'auth/no-auth-event') {
-                console.error("❌ 리다이렉트 처리 에러:", error.code, error.message);
-            }
+        }).catch((error) => {
+            console.error("❌ 리다이렉트 결과 처리 에러:", error.message);
         });
 
-    // 2. 로그인 상태 감시자를 더 꼼꼼하게 설정합니다.
+    // 기존 onAuthStateChanged는 유지하되, 내부에서 UI를 갱신하도록 보강
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            console.log("👤 로그인 상태 확정:", user.email);
             isLoggedIn = true;
             currentUser = user;
-            // 💡 버튼 이미지를 '로그인 됨' 상태로 바꾸거나 알림을 띄우는 로직을 여기에 넣으세요.
+            console.log("👤 로그인 상태 유지 중:", user.email);
         } else {
             isLoggedIn = false;
             currentUser = null;
