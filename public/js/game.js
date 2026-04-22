@@ -3477,70 +3477,64 @@ window.onNativeLoginSuccess = function(token) {
 };
 
 /* ============================================================
-   여기서부터 파일 끝까지 새로 추가하는 코드입니다.
+   최종 UI 동기화 코드 (웹/앱 공통)
    ============================================================ */
 
-// 💡 1. 로그인 상태를 실시간으로 감시하여 UI를 자동으로 바꿉니다.
+// 1. 로그인 상태 감시자 (유저 정보를 받는 즉시 UI를 강제 업데이트)
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-        console.log("👤 [인증 성공] 유저 발견:", user.email);
+        console.log("👤 [인증 완료] 유저:", user.email);
         isLoggedIn = true;
         currentUser = user;
 
-        // 💡 [핵심] 로그인 버튼 창(modal-member)이 열려있다면,
-        // 사용자가 누르지 않아도 자동으로 '사용자 정보 창'으로 즉시 변경합니다.
+        // 💡 [핵심] 사용자가 로그인 버튼 창을 열어둔 채로 인증이 완료됐다면,
+        // 버튼을 다시 누를 필요 없이 즉시 '사용자 정보' 화면으로 갈아끼웁니다.
         const modal = document.getElementById('modal-member');
         if (modal && modal.classList.contains('active')) {
             console.log("🔄 로그인 확인됨 -> UI 즉시 전환");
-            // 기존에 정의된 showUserInfo 함수를 호출합니다.
             if (typeof showUserInfo === 'function') showUserInfo();
         }
     } else {
-        console.log("📴 [인증 해제] 로그아웃 상태");
+        console.log("📴 [로그아웃 상태]");
         isLoggedIn = false;
         currentUser = null;
     }
 });
 
-// 💡 2. 멤버 버튼 클릭 시 실행되는 함수 (전역 공개)
+// 2. 멤버 버튼 클릭 함수 (전역 공개)
 window.handleMemberButtonClick = function() {
-    console.log("👤 멤버 버튼 클릭됨. 현재 상태:", isLoggedIn);
+    console.log("👤 멤버 버튼 클릭. 로그인 상태:", isLoggedIn);
     const modalMember = document.getElementById('modal-member');
     if (!modalMember) return;
 
-    modalMember.classList.add('active'); // 창 열기
+    modalMember.classList.add('active'); // 일단 창을 엽니다.
 
     if (isLoggedIn && currentUser) {
-        // 로그인 상태면 바로 유저 정보 표시
+        // 이미 로그인이 확인된 상태면 정보 표시
         if (typeof showUserInfo === 'function') showUserInfo();
     } else {
-        // 로그인 전이면 로그인 버튼들(구글/애플) 표시
+        // 아직 확인 중이거나 로그인 전이면 로그인 버튼 표시
+        // (이후 0.5초 뒤에 위 onAuthStateChanged가 정보를 받으면 알아서 화면을 바꿔줄 겁니다)
         if (typeof showLoginButtons === 'function') showLoginButtons();
     }
 };
 
-// 💡 3. 로그아웃 함수 (전역 공개)
+// 3. 로그아웃 함수 (전역 공개)
 window.handleLogout = function() {
-    console.log("👋 로그아웃 시도...");
     firebase.auth().signOut().then(() => {
         alert("로그아웃 되었습니다.");
-        // UI를 가장 확실하게 초기화하기 위해 페이지를 새로고침합니다.
+        // UI를 깨끗하게 비우기 위해 페이지를 새로고침합니다.
         location.reload();
     }).catch((error) => {
-        alert("로그아웃 오류: " + error.message);
+        alert("로그아웃 실패: " + error.message);
     });
 };
 
-// 💡 4. 리다이렉트 로그인 결과 확인
-firebase.auth().getRedirectResult()
-    .then((result) => {
-        if (result && result.user) {
-            console.log("🍎 애플 로그인 성공 후 복귀!");
-            // 여기서 특별한 처리를 안 해도 위 onAuthStateChanged가 알아서 UI를 바꿔줍니다.
-        }
-    })
-    .catch((error) => {
-        if (error.code !== 'auth/no-auth-event') {
-            console.error("❌ 리다이렉트 결과 처리 에러:", error.message);
-        }
-    });
+// 4. 리다이렉트 결과 처리
+firebase.auth().getRedirectResult().then((result) => {
+    if (result && result.user) {
+        console.log("🍎 애플 로그인 복귀 성공");
+    }
+}).catch((error) => {
+    if (error.code !== 'auth/no-auth-event') console.error("❌ 에러:", error.message);
+});
