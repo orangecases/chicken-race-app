@@ -2498,21 +2498,26 @@ function loginWithGoogle() {
 /**
  * [신규] 애플 로그인 함수
  */
-function loginWithApple() {
+async function loginWithApple() {
+    console.log("🍎 애플 로그인 시도 중...");
     const provider = new firebase.auth.OAuthProvider('apple.com');
     provider.addScope('email');
     provider.addScope('name');
 
-    firebase.auth().signInWithPopup(provider)
-        .then((result) => {
-            console.log("✅ 애플 로그인 성공!");
-        })
-        .catch((error) => {
-            console.error("❌ 애플 로그인 실패:", error.code, error.message);
-            if (error.code !== 'auth/popup-closed-by-user') {
-                alert("애플 로그인 중 오류가 발생했습니다.");
-            }
-        });
+    try {
+        // 1. [핵심] 로그인 정보를 세션이 아닌 로컬 저장소에 고정 (Missing State 에러 방지)
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+        // 2. [핵심] 웹뷰 환경에서는 팝업 대신 리다이렉트 방식을 사용
+        console.log("🚀 리다이렉트 방식으로 애플 로그인 시작");
+        return firebase.auth().signInWithRedirect(provider);
+    } catch (error) {
+        console.error("❌ 애플 로그인 설정 에러:", error.code, error.message);
+        alert("로그인 준비 중 오류가 발생했습니다: " + error.message);
+
+        // 에러 발생 시 UI 리셋 (필요한 경우)
+        if (window.resetLoginButtons) window.resetLoginButtons();
+    }
 }
 
 /**
@@ -2706,31 +2711,33 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 애플 로그인 리다이렉트 후 돌아온 결과가 있는지 확인
+    firebase.auth().getRedirectResult()
+        .then((result) => {
+            if (result.user) {
+                console.log("🍎 애플 리다이렉트 로그인 성공:", result.user);
+                // 로그인이 성공하면 전역 변수를 즉시 업데이트
+                isLoggedIn = true;
+                currentUser = result.user;
+                // UI 업데이트 함수가 있다면 여기서 호출 (예: updateUI())
+            }
+        })
+        .catch((error) => {
+            if (error.code !== 'auth/no-auth-event') {
+                console.error("❌ 리다이렉트 처리 에러:", error.code, error.message);
+            }
+        });
+
+    // 2. 로그인 상태 감시자를 더 꼼꼼하게 설정합니다.
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            loadUserData(user);
+            console.log("👤 로그인 상태 확정:", user.email);
+            isLoggedIn = true;
+            currentUser = user;
+            // 💡 버튼 이미지를 '로그인 됨' 상태로 바꾸거나 알림을 띄우는 로직을 여기에 넣으세요.
         } else {
-            if (unsubscribeUserData) {
-                unsubscribeUserData();
-                unsubscribeUserData = null;
-            }
             isLoggedIn = false;
             currentUser = null;
-            console.log("❓ 로그아웃 상태");
-
-            // 🚨 로그아웃(게스트) 상태일 때는 기기에 저장된 게스트 기록을 불러옵니다.
-            let guestScores = JSON.parse(localStorage.getItem('chickenRunGuestScores') || '[]');
-            myScores = guestScores;
-            bestScore = guestScores.length > 0 ? guestScores[0].score : 0;
-            renderMyRecordList();
-
-            updateCoinUI(); 
-            roomFetchPromise = null; 
-            fetchRaceRooms(false);
-            fetchMyRooms(); 
-
-            const sceneUserProfile = document.getElementById('scene-user-profile');
-            if (sceneUserProfile) sceneUserProfile.classList.add('hidden');
         }
     });
     // [수정] 로컬 스토리지에서 '내 기록'을 불러오는 로직을 제거합니다.
