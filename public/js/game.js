@@ -2708,40 +2708,32 @@ document.addEventListener('DOMContentLoaded', () => {
     firebase.auth().getRedirectResult()
         .then((result) => {
             if (result.user) {
-                console.log("🍎 애플 로그인 결과 수신 성공!");
-                // 전역 변수 업데이트
                 isLoggedIn = true;
                 currentUser = result.user;
-                // UI 업데이트 (유저 정보 화면으로 전환하는 함수 호출)
-                if (typeof updateUI === 'function') updateUI();
+                console.log("🍎 리다이렉트 로그인 성공!");
+                // 💡 [수정] 성공 즉시 유저 정보 화면으로 전환
+                if (typeof showUserInfo === 'function') showUserInfo();
             }
         }).catch((error) => {
-            console.error("❌ 리다이렉트 결과 처리 에러:", error.message);
+            if (error.code !== 'auth/no-auth-event') alert("오류: " + error.message);
         });
 
     // 기존 onAuthStateChanged는 유지하되, 내부에서 UI를 갱신하도록 보강
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            console.log("👤 로그인 성공 상태:", user.email);
             isLoggedIn = true;
             currentUser = user;
-
-            // 💡 [핵심] 로그인이 확인되는 순간, 현재 열려있는 로그인 팝업이 있다면 자동으로 닫거나
-            // 사용자 정보 화면으로 즉시 갱신하는 로직을 추가합니다.
-            if (typeof showUserInfo === 'function' && document.getElementById('modal-member').classList.contains('active')) {
-                showUserInfo(); // 이미 창이 떠 있다면 즉시 유저 정보로 교체
+            // 💡 [수정] 이미 멤버 창이 열려있다면 즉시 유저 정보로 교체
+            const modal = document.getElementById('modal-member');
+            if (modal && modal.classList.contains('active')) {
+                if (typeof showUserInfo === 'function') showUserInfo();
             }
         } else {
-            console.log("📴 로그아웃 상태");
             isLoggedIn = false;
             currentUser = null;
-
-            // 💡 [핵심] 로그아웃되면 열려있는 모든 멤버 창을 닫고 메인으로 보냅니다.
-            const modalMember = document.getElementById('modal-member');
-            if (modalMember) modalMember.classList.remove('active');
         }
     });
-    
+
     // 2. 로그아웃 함수 수정
     function handleLogout() {
         firebase.auth().signOut().then(() => {
