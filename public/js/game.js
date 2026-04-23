@@ -3476,71 +3476,54 @@ window.onNativeLoginSuccess = function(token) {
         });
 };
 
-
-
 /* ============================================================
    [최종] 데이터 완결성 보장 로직
    ============================================================ */
 
 firebase.auth().onAuthStateChanged(async (user) => {
-    // 💡 로그인 버튼 로딩 상태 해제
     if (window.resetLoginButtons) window.resetLoginButtons();
 
     if (user) {
-        console.log("👤 로그인 확인:", user.email);
         isLoggedIn = true;
-
         try {
-            // 💡 Firestore에서 유저 데이터(금화, 닉네임) 가져오기
             const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
-
             if (userDoc.exists) {
                 const userData = userDoc.data();
 
-                // 💡 [중요] 게임 화면이 찾는 모든 곳에 데이터를 넣어줍니다 (undefined 방지)
-                currentUser = { ...user, ...userData };
-                window.currentNickname = userData.nickname || "닉네임 없음";
-                window.currentGold = userData.gold || 0;
-                window.currentEmail = user.email;
+                // 💡 [해결] gold 대신 coins라는 이름을 사용하여 undefined를 방지합니다.
+                currentUser = {
+                    ...user,
+                    ...userData,
+                    coins: userData.coins || userData.gold || 0
+                };
 
-                // 💡 데이터 준비 완료 후 화면 갱신
+                // 💡 게임 화면이 필요로 하는 전역 변수들 채워넣기
+                window.currentNickname = userData.nickname || "닉네임 없음";
+                window.currentGold = currentUser.coins;
+
                 if (typeof updateCoinUI === 'function') updateCoinUI();
                 const modal = document.getElementById('modal-member');
                 if (modal && modal.classList.contains('active')) {
                     if (typeof showUserInfo === 'function') showUserInfo();
                 }
             }
-        } catch (e) { console.error("데이터 읽기 실패:", e); }
+        } catch (e) { console.error("데이터 로드 실패:", e); }
     } else {
         isLoggedIn = false;
         currentUser = null;
-        window.currentGold = 0;
     }
 });
 
-// 💡 로그아웃 함수 (이제 버튼이 반응할 겁니다)
 window.handleLogout = function() {
-    firebase.auth().signOut().then(() => {
-        alert("로그아웃 되었습니다.");
-        location.reload(); // 👈 화면을 새로고침해서 초기화
-    });
+    firebase.auth().signOut().then(() => { location.reload(); });
 };
 
-// 💡 멤버 버튼 클릭 (전역 설정)
 window.handleMemberButtonClick = function() {
     const modal = document.getElementById('modal-member');
     if (modal) modal.classList.add('active');
-
     if (isLoggedIn && currentUser) {
         if (typeof showUserInfo === 'function') showUserInfo();
     } else {
         if (typeof showLoginButtons === 'function') showLoginButtons();
     }
 };
-
-// 💡 애플 로그인 결과 확인
-firebase.auth().getRedirectResult().then((result) => {
-    if (result && result.user) {
-        document.getElementById('scene-auth')?.classList.add('hidden');
-    }
-});
