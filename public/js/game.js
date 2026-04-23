@@ -2504,12 +2504,13 @@ async function loginWithApple() {
     provider.addScope('name');
 
     try {
-        // 💡 중요: 기기에 로그인 시도 기록을 강제로 저장합니다.
-        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        // 💡 앱/웹 공용으로 가장 안정적인 리다이렉트 방식 사용
-        return firebase.auth().signInWithRedirect(provider);
+        console.log("🍎 애플 로그인 팝업 호출");
+        await firebase.auth().signInWithPopup(provider);
+        // 성공 시 onAuthStateChanged 가 자동으로 감지하여 후속 처리를 합니다.
     } catch (error) {
+        console.error("❌ 애플 로그인 오류:", error);
         alert("애플 로그인 오류: " + error.message);
+        if (window.resetLoginButtons) window.resetLoginButtons();
     }
 }
 
@@ -3477,53 +3478,43 @@ window.onNativeLoginSuccess = function(token) {
 };
 
 /* ============================================================
-   [최종] 데이터 완결성 보장 로직
+   [통합] 로그인 감지 및 데이터 완결성 보장 로직
    ============================================================ */
-
-firebase.auth().onAuthStateChanged(async (user) => {
+firebase.auth().onAuthStateChanged((user) => {
+    // 로그인 버튼이 로딩 중이었다면 원래대로 복구
     if (window.resetLoginButtons) window.resetLoginButtons();
 
     if (user) {
+        console.log("👤 로그인 상태 감지됨:", user.email || user.uid);
         isLoggedIn = true;
-        try {
-            const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
 
-                // 💡 [해결] gold 대신 coins라는 이름을 사용하여 undefined를 방지합니다.
-                currentUser = {
-                    ...user,
-                    ...userData,
-                    coins: userData.coins || userData.gold || 0
-                };
+        // 🚨 핵심: 여기서 기존에 만들어두신 loadUserData 함수를 호출합니다.
+        // loadUserData 내부에서 Firestore의 'coins' 등을 가져온 뒤 UI를 갱신하게 됩니다.
+        loadUserData(user);
 
-                // 💡 게임 화면이 필요로 하는 전역 변수들 채워넣기
-                window.currentNickname = userData.nickname || "닉네임 없음";
-                window.currentGold = currentUser.coins;
-
-                if (typeof updateCoinUI === 'function') updateCoinUI();
-                const modal = document.getElementById('modal-member');
-                if (modal && modal.classList.contains('active')) {
-                    if (typeof showUserInfo === 'function') showUserInfo();
-                }
-            }
-        } catch (e) { console.error("데이터 로드 실패:", e); }
     } else {
+        console.log("⚪ 로그아웃 상태 감지됨");
         isLoggedIn = false;
         currentUser = null;
+        updateCoinUI();
+
+        // 로그아웃 시 UI 초기화 (필요시)
+        document.getElementById('scene-user-profile').classList.add('hidden');
     }
 });
 
-window.handleLogout = function() {
-    firebase.auth().signOut().then(() => { location.reload(); });
-};
-
-window.handleMemberButtonClick = function() {
-    const modal = document.getElementById('modal-member');
-    if (modal) modal.classList.add('active');
-    if (isLoggedIn && currentUser) {
-        if (typeof showUserInfo === 'function') showUserInfo();
-    } else {
-        if (typeof showLoginButtons === 'function') showLoginButtons();
+// 로그아웃 버튼 이벤트 리스너 (HTML의 id="btn-logout"과 정확히 연결)
+document.addEventListener('DOMContentLoaded', () => {
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            console.log("👋 로그아웃 시도 중...");
+            firebase.auth().signOut().then(() => {
+                alert("로그아웃 되었습니다.");
+                location.reload(); // 깔끔하게 새로고침
+            }).catch((error) => {
+                alert("로그아웃 중 오류 발생: " + error.message);
+            });
+        });
     }
-};
+});
