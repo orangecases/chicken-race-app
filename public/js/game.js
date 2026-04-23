@@ -2473,20 +2473,22 @@ function resetRoomData() {
 }
 
 /**
- * [신규] 구글 로그인 함수
+ * 구글 로그인 함수
  */
 function loginWithGoogle() {
     if (window.AndroidBridge && window.AndroidBridge.requestGoogleLogin) {
-        // 📱 앱 환경: 안드로이드 네이티브 로그인을 호출합니다.
-        console.log("📱 앱 환경: 안드로이드 네이티브 구글 로그인 요청");
         window.AndroidBridge.requestGoogleLogin();
     } else {
-        // 💻 웹 환경: 기존 파이어베이스 팝업 방식 사용
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('profile');
         provider.addScope('email');
 
-        firebase.auth().signInWithPopup(provider).catch((error) => {
+        firebase.auth().signInWithPopup(provider)
+        .then(() => {
+            // ✅ 추가: 웹에서 팝업 로그인 성공 시 사용자 모달 띄우기
+            showUserProfile();
+        })
+        .catch((error) => {
             console.error("❌ 로그인 팝업 실패:", error.message);
             if (error.code !== 'auth/popup-closed-by-user') {
                 alert("로그인 중 오류가 발생했습니다: " + error.message);
@@ -2505,20 +2507,16 @@ async function loginWithApple() {
 
     try {
         if (window.AndroidBridge) {
-            // 📱 안드로이드 앱 환경: Redirect 방식 사용
-            console.log("📱 앱 환경: 애플 로그인 Redirect 호출");
-            // 안드로이드에서는 로그인 정보가 날아가지 않도록 로컬 보관 설정 필수
+            // 앱 환경: Redirect를 쓰되 MainActivity에서 가로채지 않으므로 웹뷰 안에서 돔
             await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             firebase.auth().signInWithRedirect(provider);
         } else {
-            // 💻 PC/일반 웹 브라우저 환경: Popup 방식 사용
-            console.log("💻 웹 환경: 애플 로그인 팝업 호출");
+            // ✅ 추가: 웹 환경에서 팝업 로그인 성공 시 모달 띄우기
             await firebase.auth().signInWithPopup(provider);
+            showUserProfile();
         }
     } catch (error) {
-        console.error("❌ 애플 로그인 오류:", error);
         alert("애플 로그인 오류: " + error.message);
-        if (window.resetLoginButtons) window.resetLoginButtons();
     }
 }
 
@@ -2718,10 +2716,10 @@ document.addEventListener('DOMContentLoaded', () => {
         .then((result) => {
             if (result.user) {
                 console.log("🍎 애플 로그인 성공!");
-                isLoggedIn = true;
-                currentUser = result.user;
-                // 💡 [핵심] 로그인 성공 즉시 유저 정보 화면으로 갱신
-                if (typeof showUserInfo === 'function') showUserInfo();
+                // 🚨 수정: 기존 코드의 showUserInfo()는 없는 함수 이름입니다. showUserProfile()이 맞습니다.
+                setTimeout(() => {
+                    if (typeof showUserProfile === 'function') showUserProfile();
+                }, 300);
             }
         }).catch((error) => {
             console.error("❌ 로그인 처리 에러:", error.message);
