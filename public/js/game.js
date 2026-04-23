@@ -2496,7 +2496,7 @@ function loginWithGoogle() {
 }
 
 /**
- * [신규] 애플 로그인 함수
+ * [수정] 애플 로그인 - 웹/앱 분기 처리
  */
 async function loginWithApple() {
     const provider = new firebase.auth.OAuthProvider('apple.com');
@@ -2504,9 +2504,17 @@ async function loginWithApple() {
     provider.addScope('name');
 
     try {
-        console.log("🍎 애플 로그인 팝업 호출");
-        await firebase.auth().signInWithPopup(provider);
-        // 성공 시 onAuthStateChanged 가 자동으로 감지하여 후속 처리를 합니다.
+        if (window.AndroidBridge) {
+            // 📱 안드로이드 앱 환경: Redirect 방식 사용
+            console.log("📱 앱 환경: 애플 로그인 Redirect 호출");
+            // 안드로이드에서는 로그인 정보가 날아가지 않도록 로컬 보관 설정 필수
+            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            firebase.auth().signInWithRedirect(provider);
+        } else {
+            // 💻 PC/일반 웹 브라우저 환경: Popup 방식 사용
+            console.log("💻 웹 환경: 애플 로그인 팝업 호출");
+            await firebase.auth().signInWithPopup(provider);
+        }
     } catch (error) {
         console.error("❌ 애플 로그인 오류:", error);
         alert("애플 로그인 오류: " + error.message);
