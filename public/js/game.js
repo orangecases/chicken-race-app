@@ -2483,22 +2483,21 @@ function loginWithGoogle() {
         provider.addScope('profile');
         provider.addScope('email');
 
-        firebase.auth().signInWithPopup(provider)
-        .then(() => {
-            // ✅ 추가: 웹에서 팝업 로그인 성공 시 사용자 모달 띄우기
-            showUserProfile();
-        })
-        .catch((error) => {
+        firebase.auth().signInWithPopup(provider).then(() => {
+            // ✅ 데이터가 준비될 때까지 기다렸다가 띄움
+            waitForUserAndShowProfile();
+        }).catch((error) => {
             console.error("❌ 로그인 팝업 실패:", error.message);
             if (error.code !== 'auth/popup-closed-by-user') {
                 alert("로그인 중 오류가 발생했습니다: " + error.message);
             }
+            if (window.resetLoginButtons) window.resetLoginButtons();
         });
     }
 }
 
 /**
- * [수정] 애플 로그인 - 웹/앱 분기 처리
+ * 애플 로그인 - 웹/앱 분기 처리
  */
 async function loginWithApple() {
     const provider = new firebase.auth.OAuthProvider('apple.com');
@@ -2507,16 +2506,22 @@ async function loginWithApple() {
 
     try {
         if (window.AndroidBridge) {
-            // 앱 환경: Redirect를 쓰되 MainActivity에서 가로채지 않으므로 웹뷰 안에서 돔
+            // ✅ 즉시 화면을 덮어서 사용자가 "취소/다시시도"를 못 누르게 차단!
+            showGlobalBlocker("Apple 로그인 페이지로 이동 중...");
+            sessionStorage.setItem('pendingAppleLogin', 'true'); // 돌아왔을 때 알아채기 위한 표식
+
             await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             firebase.auth().signInWithRedirect(provider);
         } else {
-            // ✅ 추가: 웹 환경에서 팝업 로그인 성공 시 모달 띄우기
             await firebase.auth().signInWithPopup(provider);
-            showUserProfile();
+            // 웹 팝업 모드일 때도 기다렸다가 띄움
+            waitForUserAndShowProfile();
         }
     } catch (error) {
         alert("애플 로그인 오류: " + error.message);
+        const blockUi = document.getElementById('auth-block-ui');
+        if (blockUi) blockUi.remove();
+        if (window.resetLoginButtons) window.resetLoginButtons();
     }
 }
 
@@ -2711,18 +2716,30 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ✅ 앱으로 돌아오자마자 표식이 있으면 즉시 화면을 차단 (버튼 중복 클릭 방지)
+    if (sessionStorage.getItem('pendingAppleLogin') === 'true') {
+        showGlobalBlocker("로그인 정보 확인 중...");
+    }
+
     // 💡 페이지 로드 시 로그인 결과 확인
     firebase.auth().getRedirectResult()
         .then((result) => {
+            sessionStorage.removeItem('pendingAppleLogin'); // 볼일 끝났으니 표식 제거
             if (result.user) {
                 console.log("🍎 애플 로그인 성공!");
-                // 🚨 수정: 기존 코드의 showUserInfo()는 없는 함수 이름입니다. showUserProfile()이 맞습니다.
-                setTimeout(() => {
-                    if (typeof showUserProfile === 'function') showUserProfile();
-                }, 300);
+                // 데이터 준비 완료되면 차단막 치우고 프로필 띄움
+                waitForUserAndShowProfile();
+            } else {
+                // 로그인 없이 그냥 돌아온 경우 차단막만 제거
+                const blockUi = document.getElementById('auth-block-ui');
+                if (blockUi) blockUi.remove();
             }
         }).catch((error) => {
             console.error("❌ 로그인 처리 에러:", error.message);
+            sessionStorage.removeItem('pendingAppleLogin');
+            const blockUi = document.getElementById('auth-block-ui');
+            if (blockUi) blockUi.remove();
+            if (window.resetLoginButtons) window.resetLoginButtons();
         });
 
     // 2. 로그아웃 함수 수정
@@ -3481,6 +3498,41 @@ window.onNativeLoginSuccess = function(token) {
             console.error("❌ 인증 실패:", error);
             if (window.resetLoginButtons) window.resetLoginButtons();
         });
+};
+
+// [신규] 화면 차단용 로딩 UI (중복 클릭 완벽 방지)
+window.showGlobalBlocker = function(msg) {
+    if (document.getElementById('auth-block-ui')) return;
+    const blockUI = document.createElement('div');
+    blockUI.id = 'auth-block-ui';
+    blockUI.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#ffd02d; font-family:'Noto Sans KR', sans-serif;";
+    // 빙글빙글 도는 스피너와 메시지 추가
+    blockUI.innerHTML = `
+        <div style="margin-bottom:20px; width:50px; height:50px; border:5px solid #fff; border-top:5px solid #ffd02d; border-radius:50%; animation:spin 1s linear infinite;"></div>
+        <h2 style="font-size:1.5rem; margin:0;">${msg}</h2>
+        <p style="color:#fff; margin-top:10px;">잠시만 기다려주세요...</p>
+        <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+    `;
+    document.body.appendChild(blockUI);
+};
+
+// [신규] 유저 데이터가 완전히 로드될 때까지 기다렸다가 모달을 띄우는 함수
+window.waitForUserAndShowProfile = function() {
+    const checkInterval = setInterval(() => {
+        // currentUser가 생성되고, 닉네임 데이터까지 완벽하게 세팅되었다면
+        if (currentUser && currentUser.nickname) {
+            clearInterval(checkInterval); // 추적 중지
+
+            // 로그인 모달 숨기기 & 화면 차단기 제거
+            const sceneAuth = document.getElementById('scene-auth');
+            if (sceneAuth) sceneAuth.classList.add('hidden');
+            const blockUi = document.getElementById('auth-block-ui');
+            if (blockUi) blockUi.remove();
+
+            // 완벽한 상태에서 프로필 모달 띄우기
+            showUserProfile();
+        }
+    }, 100); // 0.1초마다 데이터가 도착했는지 찔러봄
 };
 
 /* ============================================================
