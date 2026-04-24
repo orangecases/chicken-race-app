@@ -3111,8 +3111,14 @@ document.addEventListener('DOMContentLoaded', () => {
             clicked.classList.add('loading');
 
             const name = platform === 'google' ? 'Google' : 'Apple';
-            // 빙글빙글 도는 스피너 HTML
-            const spinnerHtml = `<div style="margin: 10px auto; width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #fff; border-radius: 50%; animation: btn-spin 1s linear infinite;"></div>`;
+
+            // 💡 [수정] 구글은 짙은 회색/검정 스피너, 애플은 반투명/흰색 스피너로 색상 분기
+            const isGoogle = platform === 'google';
+            const spinBaseColor = isGoogle ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.3)'; // 멈춰있는 둥근 바탕 선
+            const spinTopColor = isGoogle ? '#191919' : '#fff';                           // 빙글빙글 도는 포인트 선
+
+            // 스피너 HTML에 변수(색상) 적용
+            const spinnerHtml = `<div style="margin: 10px auto; width: 30px; height: 30px; border: 3px solid ${spinBaseColor}; border-top: 3px solid ${spinTopColor}; border-radius: 50%; animation: btn-spin 1s linear infinite;"></div>`;
 
             clicked.querySelector('.btn-text').innerHTML = `${name} 계정으로<br><span style="font-size:0.9rem;">로그인 중입니다.</span>${spinnerHtml}`;
 
