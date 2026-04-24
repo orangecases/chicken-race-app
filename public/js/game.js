@@ -2506,21 +2506,17 @@ async function loginWithApple() {
 
     try {
         if (window.AndroidBridge) {
-            // ✅ 즉시 화면을 덮어서 사용자가 "취소/다시시도"를 못 누르게 차단!
-            showGlobalBlocker("Apple 로그인 페이지로 이동 중...");
-            sessionStorage.setItem('pendingAppleLogin', 'true'); // 돌아왔을 때 알아채기 위한 표식
-
+            // 앱 환경: 표식만 남기고 Redirect
+            sessionStorage.setItem('pendingAppleLogin', 'true');
             await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             firebase.auth().signInWithRedirect(provider);
         } else {
+            // 웹 환경: 팝업
             await firebase.auth().signInWithPopup(provider);
-            // 웹 팝업 모드일 때도 기다렸다가 띄움
             waitForUserAndShowProfile();
         }
     } catch (error) {
         alert("애플 로그인 오류: " + error.message);
-        const blockUi = document.getElementById('auth-block-ui');
-        if (blockUi) blockUi.remove();
         if (window.resetLoginButtons) window.resetLoginButtons();
     }
 }
@@ -2716,29 +2712,27 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ✅ 앱으로 돌아오자마자 표식이 있으면 즉시 화면을 차단 (버튼 중복 클릭 방지)
+    // ✅ 앱으로 돌아왔을 때: 모달을 몰래 열고 다시 로딩 스피너를 돌려줌 (자연스러운 UX)
     if (sessionStorage.getItem('pendingAppleLogin') === 'true') {
-        showGlobalBlocker("로그인 정보 확인 중...");
+        const sceneAuth = document.getElementById('scene-auth');
+        if (sceneAuth) sceneAuth.classList.remove('hidden');
+        if (window.setButtonLoadingUI) window.setButtonLoadingUI('apple');
     }
 
     // 💡 페이지 로드 시 로그인 결과 확인
     firebase.auth().getRedirectResult()
         .then((result) => {
-            sessionStorage.removeItem('pendingAppleLogin'); // 볼일 끝났으니 표식 제거
+            sessionStorage.removeItem('pendingAppleLogin'); // 표식 제거
             if (result.user) {
                 console.log("🍎 애플 로그인 성공!");
-                // 데이터 준비 완료되면 차단막 치우고 프로필 띄움
                 waitForUserAndShowProfile();
             } else {
-                // 로그인 없이 그냥 돌아온 경우 차단막만 제거
-                const blockUi = document.getElementById('auth-block-ui');
-                if (blockUi) blockUi.remove();
+                // 로그인을 뒤로가기로 취소하고 돌아온 경우, 버튼을 원래대로 되돌림
+                if (window.resetLoginButtons) window.resetLoginButtons();
             }
         }).catch((error) => {
             console.error("❌ 로그인 처리 에러:", error.message);
             sessionStorage.removeItem('pendingAppleLogin');
-            const blockUi = document.getElementById('auth-block-ui');
-            if (blockUi) blockUi.remove();
             if (window.resetLoginButtons) window.resetLoginButtons();
         });
 
@@ -3078,6 +3072,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * 로그인 버튼들을 초기 상태로 되돌리는 함수 (취소 시 사용)
+     * 로그인 버튼 UI 컨트롤러 (스피너 추가 및 일관성 유지)
      */
     (function() {
         const gBtn = document.getElementById('btnGoogleLogin');
@@ -3086,9 +3081,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!gBtn || !aBtn) return;
 
+        // 스피너 애니메이션 CSS 전역 추가
+        if (!document.getElementById('spinner-style')) {
+            const style = document.createElement('style');
+            style.id = 'spinner-style';
+            style.innerHTML = `@keyframes btn-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
+            document.head.appendChild(style);
+        }
+
         // UI 리셋 함수
         window.resetLoginButtons = function() {
-            if (group) group.style.gap = '0.75rem'; 
+            if (group) group.style.gap = '0.75rem';
             [gBtn, aBtn].forEach(btn => {
                 btn.classList.remove('hide', 'loading');
                 const inner = btn.querySelector('.inner-btn-group');
@@ -3098,7 +3101,33 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
-        // 실제 로그인 호출부 (중복 방지를 위해 분리)
+        // ✅ UI를 '로딩 상태(스피너)'로 변경하는 함수 (Redirect 복귀 시에도 사용)
+        window.setButtonLoadingUI = function(platform) {
+            const clicked = platform === 'google' ? gBtn : aBtn;
+            const other = platform === 'google' ? aBtn : gBtn;
+
+            if (group) group.style.gap = '0';
+            other.classList.add('hide');
+            clicked.classList.add('loading');
+
+            const name = platform === 'google' ? 'Google' : 'Apple';
+            // 빙글빙글 도는 스피너 HTML
+            const spinnerHtml = `<div style="margin: 10px auto; width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #fff; border-radius: 50%; animation: btn-spin 1s linear infinite;"></div>`;
+
+            clicked.querySelector('.btn-text').innerHTML = `${name} 계정으로<br><span style="font-size:0.9rem;">로그인 중입니다.</span>${spinnerHtml}`;
+
+            const inner = clicked.querySelector('.inner-btn-group');
+            inner.classList.remove('hidden');
+            inner.innerHTML = `
+                <button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>
+                <button id="retry-login-btn">다시 시도</button>
+            `;
+            inner.querySelector('#retry-login-btn').onclick = (e) => {
+                e.stopPropagation();
+                callActualLogin(platform);
+            };
+        };
+
         function callActualLogin(platform) {
             console.log(`📡 ${platform} 로그인 실제 호출`);
             if (platform === 'google') {
@@ -3111,32 +3140,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function startTransition(platform) {
             const clicked = platform === 'google' ? gBtn : aBtn;
-            const other = platform === 'google' ? aBtn : gBtn;
-            
-            // [필수] 로딩 중이면 클릭 무시 (중복 방지)
-            if (clicked.classList.contains('loading')) return;
+            if (clicked.classList.contains('loading')) return; // 중복 방지
 
-            if (group) group.style.gap = '0';
-            other.classList.add('hide'); 
-            clicked.classList.add('loading');
-            
-            const name = platform === 'google' ? 'Google' : 'Apple';
-            clicked.querySelector('.btn-text').innerHTML = `${name} 계정으로<br><span>로그인 중입니다.</span>`;
-            
-            const inner = clicked.querySelector('.inner-btn-group');
-            inner.classList.remove('hidden');
-            
-            // 다시 시도 버튼 부활!
-            inner.innerHTML = `
-                <button onclick="event.stopPropagation(); window.resetLoginButtons();">취소</button>
-                <button id="retry-login-btn">다시 시도</button>
-            `;
-
-            // 다시 시도 버튼 이벤트 연결
-            inner.querySelector('#retry-login-btn').onclick = (e) => {
-                e.stopPropagation();
-                callActualLogin(platform);
-            };
+            // 버튼 UI를 로딩 상태로 변경
+            window.setButtonLoadingUI(platform);
 
             // 0.5초 애니메이션 후 첫 실행
             setTimeout(() => {
@@ -3498,22 +3505,6 @@ window.onNativeLoginSuccess = function(token) {
             console.error("❌ 인증 실패:", error);
             if (window.resetLoginButtons) window.resetLoginButtons();
         });
-};
-
-// [신규] 화면 차단용 로딩 UI (중복 클릭 완벽 방지)
-window.showGlobalBlocker = function(msg) {
-    if (document.getElementById('auth-block-ui')) return;
-    const blockUI = document.createElement('div');
-    blockUI.id = 'auth-block-ui';
-    blockUI.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#ffd02d; font-family:'Noto Sans KR', sans-serif;";
-    // 빙글빙글 도는 스피너와 메시지 추가
-    blockUI.innerHTML = `
-        <div style="margin-bottom:20px; width:50px; height:50px; border:5px solid #fff; border-top:5px solid #ffd02d; border-radius:50%; animation:spin 1s linear infinite;"></div>
-        <h2 style="font-size:1.5rem; margin:0;">${msg}</h2>
-        <p style="color:#fff; margin-top:10px;">잠시만 기다려주세요...</p>
-        <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
-    `;
-    document.body.appendChild(blockUI);
 };
 
 // [신규] 유저 데이터가 완전히 로드될 때까지 기다렸다가 모달을 띄우는 함수
