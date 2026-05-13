@@ -643,8 +643,20 @@ function showCoinFloatingAnimation(rank) {
         animation: coin-up-fade 0.8s ease-out forwards;
         z-index: 100;
     `;
-    
-    // 버튼의 position이 static일 경우를 대비해 relative 부여
+
+    // 애니메이션 CSS 추가 (최초 1회만)
+    if (!document.getElementById('coin-anim-style')) {
+        const style = document.createElement('style');
+        style.id = 'coin-anim-style';
+        style.innerHTML = `
+            @keyframes coin-up-fade {
+                0% { transform: translateY(0); opacity: 1; }
+                100% { transform: translateY(-80px); opacity: 0; } /* 위로 80px 상승 */
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     btn.style.position = 'relative';
     btn.appendChild(coinImg);
     
