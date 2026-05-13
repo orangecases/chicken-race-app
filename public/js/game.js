@@ -630,28 +630,24 @@ function showCoinFloatingAnimation(rank) {
 
     const coinImg = document.createElement('img');
     coinImg.src = 'assets/images/icon_coin.png';
+    
+    // transform 대신 margin-left를 사용하여 정확한 중앙 정렬
     coinImg.style.cssText = `
-        position: absolute; width: 1.25rem; height: 1.25rem; left: 50%; top: 0; margin-left: -0.625rem;
-        transform: translateX(-50%); pointer-events: none;
+        position: absolute; 
+        width: 1.25rem; 
+        height: 1.25rem; 
+        left: 50%; 
+        top: 0; 
+        margin-left: -0.625rem; /* 1.25rem의 정확한 절반을 왼쪽으로 이동 */
+        pointer-events: none;
         animation: coin-up-fade 0.8s ease-out forwards;
         z-index: 100;
     `;
-
-    // 애니메이션 CSS 추가 (최초 1회만)
-    if (!document.getElementById('coin-anim-style')) {
-        const style = document.createElement('style');
-        style.id = 'coin-anim-style';
-        style.innerHTML = `
-            @keyframes coin-up-fade {
-                0% { transform: translateX(-50%) translateY(0); opacity: 1; }
-                100% { transform: translateX(-50%) translateY(-40px); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
+    
+    // 버튼의 position이 static일 경우를 대비해 relative 부여
     btn.style.position = 'relative';
     btn.appendChild(coinImg);
+    
     setTimeout(() => coinImg.remove(), 800);
 }
 
