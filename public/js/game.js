@@ -1923,8 +1923,8 @@ function renderRaceRoomList() {
     } else if (allRoomsLoaded) {
         // 리스트 끝에 도착하면 깔끔한 텍스트 블록 추가
         const noMoreLi = document.createElement('li');
-        noMoreLi.style.cssText = "pointer-events: none; background: transparent; border: none; box-shadow: none; padding: 1rem 0; justify-content: center;";
-        noMoreLi.innerHTML = '<div class="info" style="text-align:center; width:100%; opacity:0.7;"><p>더 이상 불러올 방이 없습니다.</p></div>';
+        noMoreLi.style.cssText = "pointer-events: none; background: transparent; border: none; box-shadow: none; padding: 1.25rem 1rem; justify-content: center;";
+        noMoreLi.innerHTML = '<div class="info" style="text-align:center; width:100%;"><p>더 이상 불러올 방이 없습니다.</p></div>';
         raceRoomList.appendChild(noMoreLi);
     }
 }
