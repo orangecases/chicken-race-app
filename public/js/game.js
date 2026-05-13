@@ -1815,43 +1815,31 @@ function calculateMyLocalDisplayScore() {
 /**
  * [수정] 더보기 버튼 상태 업데이트 (숨기지 않고 텍스트/스타일 변경)
  */
+/**
+ * [수정] 더보기 버튼 상태 업데이트 (버튼 자체를 완전히 숨김)
+ */
 function updateLoadMoreButtons() {
     const loader = document.getElementById('race-room-loader');
     const myLoader = document.getElementById('my-room-loader');
-    const tabRaceRoom = document.getElementById('tab-race-room');
-    const isRaceTabActive = tabRaceRoom && tabRaceRoom.classList.contains('active');
 
-    const btnLoadMore = document.getElementById('btn-load-more');
-    const btnLoadMoreMy = document.getElementById('btn-load-more-my');
-
-    if (isRaceTabActive) {
-        if (loader) loader.classList.remove('hidden'); // 버튼 껍데기는 항상 보이게 유지
-        if (btnLoadMore) {
-            if (allRoomsLoaded) {
-                // 💡 더 부를 방이 없을 때
-                btnLoadMore.innerText = "더 이상 방이 없습니다";
-                btnLoadMore.style.opacity = '0.5';
-                btnLoadMore.style.pointerEvents = 'none'; // 클릭 방지
-            } else {
-                // 💡 더 부를 방이 있을 때
-                btnLoadMore.innerText = "목록 더 보기";
-                btnLoadMore.style.opacity = '1';
-                btnLoadMore.style.pointerEvents = 'auto'; // 클릭 허용
-            }
+    // 1. 레이스룸 탭 제어
+    if (loader) {
+        // 모든 방을 불러왔다면 로더(버튼 영역)를 완전히 숨깁니다.
+        if (allRoomsLoaded) {
+            loader.classList.add('hidden');
+        } else {
+            loader.classList.remove('hidden');
         }
-    } else {
-        if (myLoader) myLoader.classList.remove('hidden');
-        if (btnLoadMoreMy) {
-            const totalMyRooms = (isLoggedIn && currentUser && currentUser.joinedRooms) ? Object.keys(currentUser.joinedRooms).length : 0;
-            if (totalMyRooms <= currentMyRoomLimit) {
-                btnLoadMoreMy.innerText = "더 이상 방이 없습니다";
-                btnLoadMoreMy.style.opacity = '0.5';
-                btnLoadMoreMy.style.pointerEvents = 'none';
-            } else {
-                btnLoadMoreMy.innerText = "목록 더 보기";
-                btnLoadMoreMy.style.opacity = '1';
-                btnLoadMoreMy.style.pointerEvents = 'auto';
-            }
+    }
+
+    // 2. 참가중 탭 제어
+    if (myLoader) {
+        const totalMyRooms = (isLoggedIn && currentUser && currentUser.joinedRooms) ? Object.keys(currentUser.joinedRooms).length : 0;
+        // 로그인이 안되어있거나, 방이 없거나, 모든 방을 다 불렀다면 완전히 숨깁니다.
+        if (!isLoggedIn || totalMyRooms <= currentMyRoomLimit) {
+            myLoader.classList.add('hidden');
+        } else {
+            myLoader.classList.remove('hidden');
         }
     }
 }
@@ -1867,7 +1855,7 @@ function renderRoomLists() {
 
 
 /**
- * [리팩토링] 레이스룸 목록만 렌더링하는 함수
+ * [수정] 레이스룸 목록만 렌더링하는 함수 (끝에 도달 시 텍스트 추가)
  */
 function renderRaceRoomList() {
     const raceRoomList = document.querySelector('#content-race-room .score-list');
@@ -1919,11 +1907,7 @@ function renderRaceRoomList() {
             <span class="stat"><img class="chevron" src="assets/images/ico128-chevron.png"/></span>`;
 
         raceLi.onclick = (e) => {
-            // [FIX] 이벤트 버블링 방지: 디버그 버튼 클릭 시 방 입장을 막습니다.
-            if (e.target.closest('.debug-btn')) {
-                return;
-            }
-
+            if (e.target.closest('.debug-btn')) return;
             if (room.isLocked && !unlockedRoomIds.includes(room.id)) {
                 showPasswordInput(room);
             } else {
@@ -1933,13 +1917,20 @@ function renderRaceRoomList() {
         raceRoomList.appendChild(raceLi);
     });
 
+    // 💡 [수정] 빈 목록 처리 및 마지막 도달 텍스트 메시지 표시
     if (raceRoomList.children.length === 0) {
         raceRoomList.innerHTML = '<li><div class="info" style="text-align:center; width:100%;"><p>참여 가능한 레이스룸이 없습니다.</p></div></li>';
+    } else if (allRoomsLoaded) {
+        // 리스트 끝에 도착하면 깔끔한 텍스트 블록 추가
+        const noMoreLi = document.createElement('li');
+        noMoreLi.style.cssText = "pointer-events: none; background: transparent; border: none; box-shadow: none; padding: 1rem 0; justify-content: center;";
+        noMoreLi.innerHTML = '<div class="info" style="text-align:center; width:100%; opacity:0.7;"><p>더 이상 불러올 방이 없습니다.</p></div>';
+        raceRoomList.appendChild(noMoreLi);
     }
 }
 
 /**
- * [리팩토링] 참가중인 방 목록만 렌더링하는 함수
+ * [수정] 참가중인 방 목록만 렌더링하는 함수 (끝에 도달 시 텍스트 추가)
  */
 function renderMyRoomList() {
     const myRoomList = document.querySelector('#content-my-rooms .score-list');
@@ -1955,7 +1946,6 @@ function renderMyRoomList() {
                 : '';
 
             const userUsedAttempts = userRoomState.usedAttempts;
-            const isMyPlayFinished = userUsedAttempts >= room.attempts;
             const isRoomGloballyFinished = room.status === "finished";
 
             const myRoomStatusText = isRoomGloballyFinished ? "종료" : `진행중 (${room.current}/${room.limit}명)`;
@@ -1974,11 +1964,7 @@ function renderMyRoomList() {
                 </div>
                 <span class="stat"><img class="chevron" src="assets/images/ico128-chevron.png"/></span>`;
             myLi.onclick = (e) => {
-                // [FIX] 이벤트 버블링 방지: 디버그 버튼 클릭 시 방 입장을 막습니다.
-                if (e.target.closest('.debug-btn')) {
-                    return;
-                }
-
+                if (e.target.closest('.debug-btn')) return;
                 if (!isLoggedIn) {
                     const sceneAuth = document.getElementById('scene-auth');
                     if (sceneAuth) {
@@ -1997,10 +1983,20 @@ function renderMyRoomList() {
         }
     });
 
+    // 💡 [수정] 빈 목록 처리 및 마지막 도달 텍스트 메시지 표시
     if (!isLoggedIn) {
         myRoomList.innerHTML = '<li><div class="info" style="text-align:center; width:100%;"><p>로그인 후 이용 가능합니다.</p></div></li>';
     } else if (myRoomList.children.length === 0) {
         myRoomList.innerHTML = '<li><div class="info" style="text-align:center; width:100%;"><p>참가중인 레이스룸이 없습니다.</p></div></li>';
+    } else {
+        const totalMyRooms = (currentUser && currentUser.joinedRooms) ? Object.keys(currentUser.joinedRooms).length : 0;
+        if (totalMyRooms <= currentMyRoomLimit) {
+            // 리스트 끝에 도착하면 깔끔한 텍스트 블록 추가
+            const noMoreLi = document.createElement('li');
+            noMoreLi.style.cssText = "pointer-events: none; background: transparent; border: none; box-shadow: none; padding: 1rem 0; justify-content: center;";
+            noMoreLi.innerHTML = '<div class="info" style="text-align:center; width:100%; opacity:0.7;"><p>더 이상 불러올 방이 없습니다.</p></div>';
+            myRoomList.appendChild(noMoreLi);
+        }
     }
 }
 
