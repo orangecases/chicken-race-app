@@ -543,7 +543,17 @@ function startAutoActionTimer(duration, type, selector) {
 function resetGame() {
     clearAutoActionTimer(); // [신규] 타이머 초기화
     gameState = STATE.IDLE; // [수정] 초기 상태를 IDLE(대기)로 설정하여 봇 시뮬레이션만 수행
-    stopBGM(); // [신규] 리셋 시 BGM 정지 (시작 버튼 누를 때 재생)
+    stopBGM();
+    // 💡 [기획] 멀티플레이 재시작 시 난이도 유지
+    const isMultiRetry = (currentGameMode === 'multi' && currentRoom &&
+                         currentUser && currentUser.joinedRooms[currentRoom.id]?.usedAttempts > 0);
+
+    if (!isMultiRetry) {
+        baseGameSpeed = 15;
+        gameSpeed = baseGameSpeed;
+        level = 1;
+        nextLevelFrameThreshold = 600;
+    }
     baseGameSpeed = 15; // [수정] 기본 속도 상향 (10 -> 12)
     gameSpeed = baseGameSpeed;
     gameFrame = 0;
@@ -585,6 +595,64 @@ function drawStaticFrame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     skyBg.draw(0); floorBg.draw(GAME_HEIGHT - 124);
     dog.draw(); chicken.draw();
+}
+
+/**
+ * 💡 [신규] 뱃지 코인 교환 함수
+ */
+async function exchangeBadge(rank) {
+    if (!isLoggedIn || !currentUser || !currentUser.badges[rank] || currentUser.badges[rank] <= 0) return;
+
+    // 보상 설정
+    const rewards = { 1: 3, 2: 2, 3: 1 };
+    const rewardCoin = rewards[rank];
+
+    // 1. 데이터 업데이트
+    currentUser.badges[rank] -= 1;
+    currentUser.coins += rewardCoin;
+
+    // 2. 효과음 및 애니메이션
+    playSound('start'); // '띠링' 소리 (game-start.mp3)
+    showCoinFloatingAnimation(rank);
+
+    // 3. 서버 저장 및 UI 갱신
+    await saveUserDataToFirestore();
+    showUserProfile(); // 버튼 활성/비활성 상태 즉시 갱신
+    updateCoinUI();
+}
+
+/**
+ * 💡 [신규] 코인 상승 애니메이션
+ */
+function showCoinFloatingAnimation(rank) {
+    const btn = document.getElementById(`btn-exchange-${rank}`);
+    if (!btn) return;
+
+    const coinImg = document.createElement('img');
+    coinImg.src = 'assets/images/icon_coin.png';
+    coinImg.style.cssText = `
+        position: absolute; width: 1.25rem; left: 50%; top: -10px;
+        transform: translateX(-50%); pointer-events: none;
+        animation: coin-up-fade 0.8s ease-out forwards;
+        z-index: 100;
+    `;
+
+    // 애니메이션 CSS 추가 (최초 1회만)
+    if (!document.getElementById('coin-anim-style')) {
+        const style = document.createElement('style');
+        style.id = 'coin-anim-style';
+        style.innerHTML = `
+            @keyframes coin-up-fade {
+                0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+                100% { transform: translateX(-50%) translateY(-40px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    btn.style.position = 'relative';
+    btn.appendChild(coinImg);
+    setTimeout(() => coinImg.remove(), 800);
 }
 
 /**
@@ -1350,6 +1418,13 @@ function showUserProfile() {
     updateCoinUI();
 
     scene.classList.remove('hidden');
+
+    for (let i = 1; i <= 3; i++) {
+        const count = currentUser.badges[i] || 0;
+        document.getElementById(`badge-count-${i}`).innerText = count;
+        const btn = document.getElementById(`btn-exchange-${i}`);
+        if (btn) btn.disabled = (count <= 0);
+    }
 }
 
 /**
@@ -3274,6 +3349,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeRankBtn = document.querySelector('#group-rank-type button.active');
             const rankType = activeRankBtn ? activeRankBtn.dataset.val : 'best';
             const attempts = parseInt(attemptsInput) || 3;
+            const cost = 2; // 💡 [기획] 멀티 입장료 2코인 고정
+            if (currentUser.coins < cost) {
+                alert(`코인이 부족합니다. (필요: ${cost}, 보유: ${currentUser.coins})`);
+                return;
+            }
+
 
             if (currentUser.coins < attempts) {
                 alert(`코인이 부족합니다.\n(필요: ${attempts}, 보유: ${currentUser.coins})`);
@@ -3289,8 +3370,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     maxPlayers: parseInt(limitInput) || 5,
                     currentPlayers: 1, 
                     creatorUid: user.uid,
-                    attempts: attempts,
-                    rankType: rankType,
+                    attempts: parseInt(document.getElementById('input-room-attempts').value) || 3,
+                    rankType: 'total', // 💡 [기획] 무조건 합산 방식으로 고정
                     status: "inprogress",
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
