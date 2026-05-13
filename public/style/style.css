@@ -1224,7 +1224,13 @@ html, body small{font-size: 70%;}
     border: solid 1px #9d3e3f;
     color: #ffffff;
     font-weight: 600;
-    }
+}
+.btn-exchange:disabled {
+    background-color: #9f6967;
+    border: solid 1px #9c5b5b;
+    color: #b4b4b4;
+    cursor: not-allowed;      /* 금지 표시 커서 */
+}
 
 /* [신규] 프로필 모달 내 코인 충전 버튼 스타일 */
 .input-group.row .coin-count button {
