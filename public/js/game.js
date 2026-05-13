@@ -46,10 +46,10 @@ const ADMIN_UIDS = ["51FsLG2SFlMOVhxtNNtwHdtT55O2"]; // 예: "Abc123xyz..."
 // [수정] 페이지네이션(Pagination) 설정: 1만개 이상의 방이 있어도 앱이 원활하게 동작하도록 합니다.
 let lastVisibleRoomDoc = null; // 마지막으로 불러온 방의 문서 참조
 let isFetchingRooms = false;   // 방 목록을 불러오는 중인지 여부 (중복 호출 방지)
-let currentRoomLimit = 5;     // [신규] 현재 불러올 방의 개수 (limit)
-let currentMyRoomLimit = 10;   // [신규] 참가중 탭의 목록 노출 개수 (limit)
+let currentRoomLimit = 15;     // [신규] 현재 불러올 방의 개수 (limit)
+let currentMyRoomLimit = 15;   // [신규] 참가중 탭의 목록 노출 개수 (limit)
 let unsubscribeRoomListener = null; // [신규] 실시간 리스너 해제 함수
-const ROOMS_PER_PAGE = 5;     // 한 번에 불러올 방의 개수
+const ROOMS_PER_PAGE = 15;     // 한 번에 불러올 방의 개수
 let allRoomsLoaded = false;    // 모든 방을 다 불러왔는지 여부 (더보기 버튼 표시 제어)
 let myRooms = [];              // [신규] 참가중인 방 목록 데이터 별도 저장
 let unsubscribeMyRoomsListeners = []; // [신규] '내 방' 목록 실시간 리스너 해제 함수 배열
@@ -1199,38 +1199,34 @@ function fetchRaceRooms(loadMore = false) {
 
         unsubscribeRoomListener = db.collection('rooms')
             .orderBy('createdAt', 'desc')
-            // 💡 팁: 마감된 방이 필터링되면서 목록이 너무 적게 뜨는 것을 방지하기 위해 
-            // DB에서 여유 있게(+10) 가져오도록 수정했습니다.
-            .limit(currentRoomLimit + 10) 
+            // 💡 [수정] 필터링 돼서 모자라는 일이 없도록, 요청한 개수보다 +20개를 더 여유 있게 가져옵니다.
+            .limit(currentRoomLimit + 20)
             .onSnapshot((querySnapshot) => {
-                
+
                 if (querySnapshot.metadata.fromCache) {
                     console.log("⏳ 캐시 데이터 무시, 서버 응답 대기 중...");
-                    return; 
+                    return;
                 }
 
                 if (isFirstCallback) {
                     const newRooms = [];
                     querySnapshot.forEach(doc => {
                         const roomData = mapFirestoreDocToRoom(doc);
-                        
-                        // 🚨 핵심 기획 반영: 
-                        // 처음 불러올 때 '아직 인원이 덜 찼고, 종료되지 않은 방'만 배열에 담습니다.
+
                         if (roomData.current < roomData.limit && roomData.status !== 'finished') {
                             newRooms.push(roomData);
                         }
                     });
-                    
-                    raceRooms = newRooms; // 필터링된 깔끔한 데이터로 화면 갱신
-                    
-                    isFirstCallback = false; // 이제부터는 실시간 '레이아웃 안정' 모드로 전환
 
-                    if (querySnapshot.docs.length <= currentRoomLimit) {
+                    raceRooms = newRooms;
+                    isFirstCallback = false;
+
+                    // 💡 [수정] 파이어베이스에서 가져온 진짜 문서 개수가 (limit + 20)보다 적다면,
+                    // 서버에 있는 방을 바닥까지 다 긁어온 것입니다!
+                    if (querySnapshot.docs.length < currentRoomLimit + 20) {
                         allRoomsLoaded = true;
-                        if (loader) loader.classList.add('hidden');
                     } else {
                         allRoomsLoaded = false;
-                        if (loader) loader.classList.remove('hidden');
                     }
 
                     if (resolvePromise) {
@@ -1817,7 +1813,7 @@ function calculateMyLocalDisplayScore() {
 }
 
 /**
- * [신규] 더보기 버튼 상태 업데이트 (누락된 함수 복원)
+ * [수정] 더보기 버튼 상태 업데이트 (숨기지 않고 텍스트/스타일 변경)
  */
 function updateLoadMoreButtons() {
     const loader = document.getElementById('race-room-loader');
@@ -1825,16 +1821,37 @@ function updateLoadMoreButtons() {
     const tabRaceRoom = document.getElementById('tab-race-room');
     const isRaceTabActive = tabRaceRoom && tabRaceRoom.classList.contains('active');
 
+    const btnLoadMore = document.getElementById('btn-load-more');
+    const btnLoadMoreMy = document.getElementById('btn-load-more-my');
+
     if (isRaceTabActive) {
-        if (loader) {
-            if (allRoomsLoaded) loader.classList.add('hidden');
-            else loader.classList.remove('hidden');
+        if (loader) loader.classList.remove('hidden'); // 버튼 껍데기는 항상 보이게 유지
+        if (btnLoadMore) {
+            if (allRoomsLoaded) {
+                // 💡 더 부를 방이 없을 때
+                btnLoadMore.innerText = "더 이상 방이 없습니다";
+                btnLoadMore.style.opacity = '0.5';
+                btnLoadMore.style.pointerEvents = 'none'; // 클릭 방지
+            } else {
+                // 💡 더 부를 방이 있을 때
+                btnLoadMore.innerText = "목록 더 보기";
+                btnLoadMore.style.opacity = '1';
+                btnLoadMore.style.pointerEvents = 'auto'; // 클릭 허용
+            }
         }
     } else {
-        if (myLoader) {
+        if (myLoader) myLoader.classList.remove('hidden');
+        if (btnLoadMoreMy) {
             const totalMyRooms = (isLoggedIn && currentUser && currentUser.joinedRooms) ? Object.keys(currentUser.joinedRooms).length : 0;
-            if (totalMyRooms > currentMyRoomLimit) myLoader.classList.remove('hidden');
-            else myLoader.classList.add('hidden');
+            if (totalMyRooms <= currentMyRoomLimit) {
+                btnLoadMoreMy.innerText = "더 이상 방이 없습니다";
+                btnLoadMoreMy.style.opacity = '0.5';
+                btnLoadMoreMy.style.pointerEvents = 'none';
+            } else {
+                btnLoadMoreMy.innerText = "목록 더 보기";
+                btnLoadMoreMy.style.opacity = '1';
+                btnLoadMoreMy.style.pointerEvents = 'auto';
+            }
         }
     }
 }
@@ -2764,12 +2781,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // [수정] 로컬 스토리지에서 '내 기록'을 불러오는 로직을 제거합니다.
+    // 로컬 스토리지에서 '내 기록'을 불러오는 로직을 제거합니다.
     // 이제 모든 기록은 onAuthStateChanged를 통해 Firestore에서 가져옵니다.
     renderMyRecordList(); // 초기에는 "기록 없음" 상태로 렌더링됩니다.
     renderTop100List();
 
-    // 🚨 [추가] 앱이 켜지자마자 대기하지 않고 즉시 레이스룸 목록을 서버에서 불러옵니다!
+    // 🚨 앱이 켜지자마자 대기하지 않고 즉시 레이스룸 목록을 서버에서 불러옵니다!
     fetchRaceRooms(false);
 
     const btnLoadMore = document.getElementById('btn-load-more');
