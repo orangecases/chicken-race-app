@@ -631,7 +631,7 @@ function showCoinFloatingAnimation(rank) {
     const coinImg = document.createElement('img');
     coinImg.src = 'assets/images/icon_coin.png';
     coinImg.style.cssText = `
-        position: absolute; width: 1.25rem; left: 50%; top: -10px;
+        position: absolute; width: 1.25rem; height: 1.25rem left: 50%; top: -10px;
         transform: translateX(-50%); pointer-events: none;
         animation: coin-up-fade 0.8s ease-out forwards;
         z-index: 100;

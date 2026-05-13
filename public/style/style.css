@@ -1215,6 +1215,16 @@ html, body small{font-size: 70%;}
     color: white;
     text-shadow: 1px 1px 0 #000;
 }
+.badge-item .btn-exchange{
+    all: unset;
+    font-size: 0.72rem;
+    background-color: #f1625c;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: solid 1px #9d3e3f;
+    color: #ffffff;
+    font-weight: 600;
+    }
 
 /* [신규] 프로필 모달 내 코인 충전 버튼 스타일 */
 .input-group.row .coin-count button {
