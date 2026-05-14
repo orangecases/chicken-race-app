@@ -541,52 +541,57 @@ function startAutoActionTimer(duration, type, selector) {
 }
 
 function resetGame() {
-    clearAutoActionTimer(); // [신규] 타이머 초기화
-    gameState = STATE.IDLE; // [수정] 초기 상태를 IDLE(대기)로 설정하여 봇 시뮬레이션만 수행
+    clearAutoActionTimer(); // 타이머 초기화
+    gameState = STATE.IDLE; // 초기 상태를 IDLE(대기)로 설정
     stopBGM();
-    // 💡 [기획] 멀티플레이 재시작 시 난이도 유지
+
+    // 💡 [기획] 멀티플레이 재시작 시 난이도 유지 확인
     const isMultiRetry = (currentGameMode === 'multi' && currentRoom &&
                          currentUser && currentUser.joinedRooms[currentRoom.id]?.usedAttempts > 0);
 
     if (!isMultiRetry) {
+        // 싱글 게임이거나 멀티 첫 판일 때: 1레벨부터 새출발
         baseGameSpeed = 15;
         gameSpeed = baseGameSpeed;
         level = 1;
         nextLevelFrameThreshold = 600;
+    } else {
+        // 멀티플레이 재시작 시: 기존 레벨과 기본 속도 유지
+        console.log(`🚀 멀티플레이 재시작: 난이도 유지 (LV.${level}, Speed:${baseGameSpeed})`);
+        gameSpeed = baseGameSpeed;
     }
-    baseGameSpeed = 15; // [수정] 기본 속도 상향 (10 -> 12)
-    gameSpeed = baseGameSpeed;
+
+    // 🚨 공통 초기화 항목 (여기서 중복으로 레벨을 덮어씌우던 코드를 삭제했습니다!)
     gameFrame = 0;
     score = 0;
-    level = 1; // [신규] 레벨 초기화
-    nextLevelFrameThreshold = 600; // [수정] 시간 기준 초기화
-    isJumpPressed = false; // [수정] 점프 입력 상태 즉시 초기화
+    isJumpPressed = false;
     obstacleTimer = 0;
-    skyBg.x = 0; floorBg.x = 0; obstacles = []; feathers = []; // [신규] 깃털 초기화
+    skyBg.x = 0; floorBg.x = 0; obstacles = []; feathers = [];
     chicken.y = FLOOR_Y; chicken.dy = 0; chicken.x = 100; chicken.targetX = 100;
-    chicken.isBoosting = false; chicken.boostProgress = 0; chicken.crashFrame = 0; // [수정] 부스트 및 게이지 즉시 초기화
+    chicken.isBoosting = false; chicken.boostProgress = 0; chicken.crashFrame = 0;
     dog.x = dog.initialX; dog.targetX = dog.initialX;
 
     document.getElementById('game-over-screen').classList.add('hidden');
     document.getElementById('game-start-screen').classList.add('hidden');
     document.getElementById('game-pause-screen').classList.add('hidden');
 
-    // [수정] 버튼 UI의 눌림 상태(CSS 클래스) 강제 제거
     const btnJump = document.getElementById('btn-jump');
     if (btnJump) btnJump.classList.remove('pressed');
     const btnBoost = document.getElementById('btn-boost');
     if (btnBoost) btnBoost.classList.remove('pressed');
 
-    // HUD 점수 초기화
+    // HUD 점수 및 레벨 초기화/갱신
     const scoreEl = document.querySelector('.hud-score');
     const levelEl = document.querySelector('.hud-level');
     if (scoreEl) {
         scoreEl.querySelector('.score-val').innerText = '0';
         scoreEl.classList.remove('green', 'yellow', 'orange', 'red');
     }
-    if (levelEl) levelEl.innerText = 'LV.' + level;
+    if (levelEl) {
+        // 유지된 레벨이 화면에 즉시 표시됩니다.
+        levelEl.innerText = 'LV.' + level;
+    }
 
-    // 일시정지 버튼 아이콘 초기화
     const btnPauseToggle = document.getElementById('btn-pause-toggle');
     if (btnPauseToggle) btnPauseToggle.classList.remove('paused');
 }
