@@ -3081,15 +3081,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const inputAttempts = document.getElementById('input-room-attempts');
     const displayAttempts = document.getElementById('display-attempts');
-    const displayCost = document.getElementById('display-cost');
-    if (inputAttempts && displayAttempts && displayCost) {
-        const updateCost = () => {
+
+    // 💡 비용(displayCost) 관련 코드를 삭제하고 시도 횟수만 업데이트하도록 수정
+    if (inputAttempts && displayAttempts) {
+        const updateAttempts = () => {
             const attempts = inputAttempts.value;
             displayAttempts.innerText = attempts;
-            displayCost.innerText = attempts;
         };
-        inputAttempts.addEventListener('input', updateCost);
-        updateCost();
+        inputAttempts.addEventListener('input', updateAttempts);
+        updateAttempts();
     }
 
     const inputLimit = document.getElementById('input-room-limit');
