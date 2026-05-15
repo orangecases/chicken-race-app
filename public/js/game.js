@@ -3659,7 +3659,6 @@ window.waitForUserAndShowProfile = function() {
 };
 
 // 💡 [수정] 약관 열기 및 회원탈퇴 기능 (모바일/웹뷰 터치 최적화)
-// 💡 [수정] 약관 열기 및 회원탈퇴 기능 (모바일/웹뷰 터치 최적화)
 document.addEventListener('click', async (e) => {
 
     // 1. 이용약관 버튼을 눌렀을 때 (closest로 터치 영역 보정)
