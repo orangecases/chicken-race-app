@@ -3658,6 +3658,16 @@ window.waitForUserAndShowProfile = function() {
     }, 100); // 0.1초마다 데이터가 도착했는지 찔러봄
 };
 
+// 💡 [신규] 이용약관 및 정책 창 띄우기
+const btnPrivacy = document.getElementById('btn-privacy-policy');
+if (btnPrivacy) {
+    btnPrivacy.onclick = (e) => {
+        e.preventDefault(); // a 태그의 기본 이동 방지
+        // 🚀 방금 만드신 진짜 노션 약관 페이지로 연결!
+        window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_blank'); 
+    };
+}
+
 /* ============================================================
    [통합] 로그인 감지 및 데이터 완결성 보장 로직
    ============================================================ */
