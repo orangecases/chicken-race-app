@@ -1050,6 +1050,8 @@ html, body small{font-size: 70%;}
 .modal-footer-links a{
     color: #e9e9e9;
     text-decoration: none;
+    border: solid;
+    border-width: 0 0 1px 0;
 }
 #scene-exit-confirm .modal-body {
     justify-content: center;
@@ -1229,7 +1231,7 @@ html, body small{font-size: 70%;}
     all: unset;
     font-size: 0.7rem;
     background-color: #f1625c;
-    padding: 0.2rem 0.5rem;
+    padding: 0.2rem 0.5rem 0.35rem 0.5rem;
     border-radius: 0.25rem;
     border: solid 1px #9d3e3f;
     color: #ffffff;
