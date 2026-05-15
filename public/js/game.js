@@ -3658,28 +3658,32 @@ window.waitForUserAndShowProfile = function() {
     }, 100); // 0.1초마다 데이터가 도착했는지 찔러봄
 };
 
-// 💡 [신규] 약관 열기 및 회원탈퇴 기능 (화면 전체 감지 방식)
+// 💡 [수정] 약관 열기 및 회원탈퇴 기능 (모바일/웹뷰 터치 최적화)
+// 💡 [수정] 약관 열기 및 회원탈퇴 기능 (모바일/웹뷰 터치 최적화)
 document.addEventListener('click', async (e) => {
-    
-    // 1. 이용약관 버튼을 눌렀을 때
-    if (e.target.id === 'btn-privacy-policy') {
-        e.preventDefault(); // a 태그의 기본 이동 방지
-        window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_blank');
+
+    // 1. 이용약관 버튼을 눌렀을 때 (closest로 터치 영역 보정)
+    const btnPrivacy = e.target.closest('#btn-privacy-policy');
+    if (btnPrivacy) {
+        e.preventDefault();
+        // 🚀 안드로이드 웹뷰에서는 새 창(_blank)이 무시되므로 현재 창(_self)에서 엽니다.
+        // 유저는 안드로이드 '뒤로 가기' 버튼을 눌러 다시 게임으로 돌아올 수 있습니다.
+        window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_self');
     }
 
     // 2. 회원탈퇴 버튼을 눌렀을 때
-    if (e.target.id === 'btn-delete-account') {
-        e.preventDefault(); 
-        
+    const btnDelete = e.target.closest('#btn-delete-account');
+    if (btnDelete) {
+        btnDelete.preventDefault();
+
         const user = firebase.auth().currentUser;
         if (!user) {
             alert("로그인 정보가 없습니다.");
             return;
         }
 
-        // 경고창 띄우기 (취소 누르면 여기서 정지)
         const confirmMsg = "정말로 탈퇴하시겠습니까?\n보유 중인 코인, 뱃지, 멀티플레이 기록 등 모든 데이터가 영구적으로 삭제되며 절대 복구할 수 없습니다.";
-        if (!confirm(confirmMsg)) return; 
+        if (!confirm(confirmMsg)) return;
 
         try {
             // [DB 삭제] Firestore에 저장된 내 유저 데이터 완전 삭제
@@ -3695,8 +3699,6 @@ document.addEventListener('click', async (e) => {
 
         } catch (error) {
             console.error("❌ 회원탈퇴 실패:", error);
-            
-            // 보안 정책: 로그인한 지 오래되면 재로그인 요구
             if (error.code === 'auth/requires-recent-login') {
                 alert("보안을 위해 다시 로그인한 후 탈퇴를 진행해 주세요.");
                 firebase.auth().signOut().then(() => location.reload());
