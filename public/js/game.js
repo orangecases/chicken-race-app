@@ -3748,4 +3748,56 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // 💡 [안드로이드 터치 오류 완벽 해결] 버튼에 직접 이벤트 부착
+    const btnPrivacy = document.getElementById('btn-privacy-policy');
+    const btnDelete = document.getElementById('btn-delete-account');
+
+    if (btnPrivacy) {
+        // 터치(모바일)와 클릭(PC) 모두 즉시 반응하도록 설정
+        const openPrivacy = (e) => {
+            e.preventDefault(); 
+            window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_blank');
+        };
+        btnPrivacy.addEventListener('click', openPrivacy);
+        btnPrivacy.addEventListener('touchstart', openPrivacy, { passive: false });
+    }
+
+    if (btnDelete) {
+        const deleteAccount = async (e) => {
+            e.preventDefault(); 
+            
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                alert("로그인 정보가 없습니다.");
+                return;
+            }
+
+            const confirmMsg = "정말로 탈퇴하시겠습니까?\n보유 중인 코인, 뱃지, 멀티플레이 기록 등 모든 데이터가 영구적으로 삭제되며 절대 복구할 수 없습니다.";
+            if (!confirm(confirmMsg)) return; 
+
+            try {
+                await db.collection("users").doc(user.uid).delete();
+                console.log("🗑️ Firestore 유저 데이터 삭제 완료");
+
+                await user.delete();
+                console.log("🗑️ Firebase 계정 영구 삭제 완료");
+
+                alert("회원 탈퇴가 정상적으로 완료되었습니다. 이용해 주셔서 감사합니다.");
+                location.reload();
+
+            } catch (error) {
+                console.error("❌ 회원탈퇴 실패:", error);
+                if (error.code === 'auth/requires-recent-login') {
+                    alert("보안을 위해 다시 로그인한 후 탈퇴를 진행해 주세요.");
+                    firebase.auth().signOut().then(() => location.reload());
+                } else {
+                    alert("탈퇴 처리 중 오류가 발생했습니다: " + error.message);
+                }
+            }
+        };
+        btnDelete.addEventListener('click', deleteAccount);
+        // 안드로이드 화면에서 터치가 씹히지 않도록 강제 할당
+        btnDelete.addEventListener('touchstart', deleteAccount, { passive: false });
+    }
 });
