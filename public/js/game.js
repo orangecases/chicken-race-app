@@ -3658,22 +3658,22 @@ window.waitForUserAndShowProfile = function() {
     }, 100); // 0.1초마다 데이터가 도착했는지 찔러봄
 };
 
-// 💡 [수정] 약관 열기 및 회원탈퇴 기능 (모바일/웹뷰 터치 최적화)
+// 💡 [최종 수정] 약관 열기 및 회원탈퇴 기능
 document.addEventListener('click', async (e) => {
 
-    // 1. 이용약관 버튼을 눌렀을 때 (closest로 터치 영역 보정)
+    // 1. 이용약관 버튼을 눌렀을 때
     const btnPrivacy = e.target.closest('#btn-privacy-policy');
     if (btnPrivacy) {
-        e.preventDefault();
-        // 🚀 안드로이드 웹뷰에서는 새 창(_blank)이 무시되므로 현재 창(_self)에서 엽니다.
-        // 유저는 안드로이드 '뒤로 가기' 버튼을 눌러 다시 게임으로 돌아올 수 있습니다.
-        window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_self');
+        e.preventDefault(); // 💡 올바른 이벤트 객체(e) 사용
+        // 사용자님 피드백 반영: 갇힘 방지를 위해 다시 새 창(_blank)으로 원복합니다.
+        // (앱에서는 사파리/크롬 브라우저가 열리도록 네이티브 세팅을 할 예정입니다.)
+        window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_blank');
     }
 
     // 2. 회원탈퇴 버튼을 눌렀을 때
     const btnDelete = e.target.closest('#btn-delete-account');
     if (btnDelete) {
-        btnDelete.preventDefault();
+        e.preventDefault(); // 🚨 오타 수정 완료! (btnDelete -> e)
 
         const user = firebase.auth().currentUser;
         if (!user) {
