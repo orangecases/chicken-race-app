@@ -3658,43 +3658,47 @@ window.waitForUserAndShowProfile = function() {
     }, 100); // 0.1초마다 데이터가 도착했는지 찔러봄
 };
 
-// 💡 [최종 수정] 약관 열기 및 회원탈퇴 기능
-document.addEventListener('click', async (e) => {
+// 💡 [수정] 1. 고객센터 (이메일 텍스트 안내)
+const btnCustomerService = document.getElementById('btn-customer-service');
+if (btnCustomerService) {
+    btnCustomerService.onclick = () => {
+        alert("게임 이용에 관한 문의 사항은 아래 이메일로 보내주세요!\n\n📧 kitworks.inc@gmail.com");
+    };
+}
 
-    // 1. 이용약관 버튼을 눌렀을 때
-    const btnPrivacy = e.target.closest('#btn-privacy-policy');
-    if (btnPrivacy) {
-        e.preventDefault(); // 💡 올바른 이벤트 객체(e) 사용
-        // 사용자님 피드백 반영: 갇힘 방지를 위해 다시 새 창(_blank)으로 원복합니다.
-        // (앱에서는 사파리/크롬 브라우저가 열리도록 네이티브 세팅을 할 예정입니다.)
+// 💡 [수정] 2. 이용약관 및 정책
+const btnPrivacy = document.getElementById('btn-privacy-policy');
+if (btnPrivacy) {
+    btnPrivacy.onclick = () => {
+        // iOS/안드로이드 등 모바일 앱 환경을 위해 새 창(_blank)으로 실행
         window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_blank');
-    }
+    };
+}
 
-    // 2. 회원탈퇴 버튼을 눌렀을 때
-    const btnDelete = e.target.closest('#btn-delete-account');
-    if (btnDelete) {
-        e.preventDefault(); // 🚨 오타 수정 완료! (btnDelete -> e)
-
+// 💡 [수정] 3. 회원탈퇴
+const btnDelete = document.getElementById('btn-delete-account');
+if (btnDelete) {
+    btnDelete.onclick = async () => {
         const user = firebase.auth().currentUser;
         if (!user) {
             alert("로그인 정보가 없습니다.");
             return;
         }
 
-        const confirmMsg = "정말로 탈퇴하시겠습니까?\n보유 중인 코인, 뱃지, 멀티플레이 기록 등 모든 데이터가 영구적으로 삭제되며 절대 복구할 수 없습니다.";
-        if (!confirm(confirmMsg)) return;
+        const confirmMsg = "정말로 탈퇴하시겠습니까?\n보유 중인 코인, 뱃지, 기록 등 모든 데이터가 영구적으로 삭제되며 절대 복구할 수 없습니다.";
+        if (!confirm(confirmMsg)) return; 
 
         try {
-            // [DB 삭제] Firestore에 저장된 내 유저 데이터 완전 삭제
+            // 1. DB에서 내 데이터 삭제
             await db.collection("users").doc(user.uid).delete();
             console.log("🗑️ Firestore 유저 데이터 삭제 완료");
 
-            // [인증 삭제] Firebase Authentication에서 내 계정 완전 삭제
+            // 2. Firebase 계정 삭제
             await user.delete();
             console.log("🗑️ Firebase 계정 영구 삭제 완료");
 
-            alert("회원 탈퇴가 정상적으로 완료되었습니다. 이용해 주셔서 감사합니다.");
-            location.reload(); // 초기 화면으로 새로고침
+            alert("회원 탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.");
+            location.reload(); 
 
         } catch (error) {
             console.error("❌ 회원탈퇴 실패:", error);
@@ -3705,8 +3709,8 @@ document.addEventListener('click', async (e) => {
                 alert("탈퇴 처리 중 오류가 발생했습니다: " + error.message);
             }
         }
-    }
-});
+    };
+}
 
 /* ============================================================
    [통합] 로그인 감지 및 데이터 완결성 보장 로직
