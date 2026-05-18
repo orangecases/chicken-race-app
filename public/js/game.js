@@ -3672,7 +3672,16 @@ const btnPrivacy = document.getElementById('btn-privacy-policy');
 if (btnPrivacy) {
     btnPrivacy.addEventListener('click', (e) => {
         e.preventDefault();
-        window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_blank');
+        const notionUrl = 'https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31';
+
+        // 🚀 안드로이드 앱 환경(브릿지가 존재함)인 경우 -> 크롬 등 외부 브라우저 띄우기
+        if (window.AndroidBridge && window.AndroidBridge.openExternalBrowser) {
+            window.AndroidBridge.openExternalBrowser(notionUrl);
+        }
+        // PC 웹이나 일반 브라우저 환경인 경우 -> 새 창 띄우기
+        else {
+            window.open(notionUrl, '_blank');
+        }
     });
 }
 
