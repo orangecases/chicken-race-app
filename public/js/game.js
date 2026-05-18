@@ -3658,47 +3658,48 @@ window.waitForUserAndShowProfile = function() {
     }, 100); // 0.1초마다 데이터가 도착했는지 찔러봄
 };
 
-// 💡 [수정] 1. 고객센터 (이메일 텍스트 안내)
+// 💡 [최종 정리] 1. 고객센터 (이메일 안내창)
 const btnCustomerService = document.getElementById('btn-customer-service');
 if (btnCustomerService) {
-    btnCustomerService.onclick = () => {
+    btnCustomerService.addEventListener('click', (e) => {
+        e.preventDefault();
         alert("게임 이용에 관한 문의 사항은 아래 이메일로 보내주세요!\n\n📧 kitworks.inc@gmail.com");
-    };
+    });
 }
 
-// 💡 [수정] 2. 이용약관 및 정책
+// 💡 [최종 정리] 2. 이용약관 및 정책 (새 창 열기)
 const btnPrivacy = document.getElementById('btn-privacy-policy');
 if (btnPrivacy) {
-    btnPrivacy.onclick = () => {
-        // iOS/안드로이드 등 모바일 앱 환경을 위해 새 창(_blank)으로 실행
+    btnPrivacy.addEventListener('click', (e) => {
+        e.preventDefault();
         window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_blank');
-    };
+    });
 }
 
-// 💡 [수정] 3. 회원탈퇴
+// 💡 [최종 정리] 3. 회원탈퇴 (확인창 후 DB 삭제)
 const btnDelete = document.getElementById('btn-delete-account');
 if (btnDelete) {
-    btnDelete.onclick = async () => {
+    btnDelete.addEventListener('click', async (e) => {
+        e.preventDefault();
+
         const user = firebase.auth().currentUser;
         if (!user) {
             alert("로그인 정보가 없습니다.");
             return;
         }
 
-        const confirmMsg = "정말로 탈퇴하시겠습니까?\n보유 중인 코인, 뱃지, 기록 등 모든 데이터가 영구적으로 삭제되며 절대 복구할 수 없습니다.";
-        if (!confirm(confirmMsg)) return; 
+        const confirmMsg = "정말로 탈퇴하시겠습니까?\n보유 중인 코인, 뱃지, 멀티플레이 기록 등 모든 데이터가 영구적으로 삭제되며 절대 복구할 수 없습니다.";
+        if (!confirm(confirmMsg)) return;
 
         try {
-            // 1. DB에서 내 데이터 삭제
             await db.collection("users").doc(user.uid).delete();
             console.log("🗑️ Firestore 유저 데이터 삭제 완료");
 
-            // 2. Firebase 계정 삭제
             await user.delete();
             console.log("🗑️ Firebase 계정 영구 삭제 완료");
 
-            alert("회원 탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.");
-            location.reload(); 
+            alert("회원 탈퇴가 정상적으로 완료되었습니다. 이용해 주셔서 감사합니다.");
+            location.reload();
 
         } catch (error) {
             console.error("❌ 회원탈퇴 실패:", error);
@@ -3709,7 +3710,7 @@ if (btnDelete) {
                 alert("탈퇴 처리 중 오류가 발생했습니다: " + error.message);
             }
         }
-    };
+    });
 }
 
 /* ============================================================
