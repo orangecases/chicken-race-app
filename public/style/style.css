@@ -890,14 +890,26 @@ html, body small{font-size: 70%;}
 #scene-delete-room-confirm {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
+    
+    /* 💡 핵심: 가로/세로 배치를 바꾸어 가상 요소가 밀어주도록 만듭니다 */
     display: flex; 
-    align-items: flex-start; /* 💡 화면이 길어질 때 잘리지 않도록 위에서부터 시작 */
-    overflow-y: auto;        /* 💡 세로 스크롤 허용 */
-    padding: 3rem 1rem;      /* 💡 스크롤 할 때 위아래 여유 공간 확보 */
+    flex-direction: column; 
+    align-items: center; /* 가로 중앙 정렬 */
+    overflow-y: auto;
     z-index: 200;
 }
 
-/* [수정] 공통 모달 컨테이너 스타일 */
+#scene-create-room::before, #scene-create-room::after,
+#scene-auth::before, #scene-auth::after,
+#scene-user-profile::before, #scene-user-profile::after,
+#scene-password-input::before, #scene-password-input::after,
+#scene-exit-confirm::before, #scene-exit-confirm::after,
+#scene-delete-room-confirm::before, #scene-delete-room-confirm::after {
+    content: '';
+    flex: 1 1 auto;
+}
+
+/* 공통 모달 컨테이너 스타일 */
 .modal-container {
     width: 100%;
     max-width: 22rem;
@@ -906,10 +918,11 @@ html, body small{font-size: 70%;}
     padding: 0.25rem;
     display: flex;
     flex-direction: column;
-    margin: auto; /* 💡 핵심: 화면이 남으면 알아서 중앙 정렬, 넘치면 스크롤! */
+        flex-shrink: 0; /* 키보드가 올라와도 모달이 찌그러지지 않게 방어 */
+    margin: 2rem 0; /* 키보드가 꽉 찼을 때 위아래 최소 2rem 여백 보장 */
 }
 
-/* [수정] 주황색 테마 모달 (방 만들기, 비밀번호 입력 등) */
+/* 주황색 테마 모달 (방 만들기, 비밀번호 입력 등) */
 .modal-container.modal-theme-orange {
     background-color: #efaf6f;
     border-color: #ffefdd;
@@ -942,7 +955,7 @@ html, body small{font-size: 70%;}
     background-color: #71aac6; 
 }
 
-/* [수정] 주황색 테마 모달의 body 전용 색상 */
+/* 주황색 테마 모달의 body 전용 색상 */
 .modal-container.modal-theme-orange .modal-body {
     background-color: #df9a59;
 }
