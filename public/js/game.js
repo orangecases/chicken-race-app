@@ -2478,11 +2478,11 @@ function watchAdAndGetReward() {
             if (btnCloseVideo) {
                 btnCloseVideo.innerText = "시청완료 ❯❯";
 
+                // ✨ 수정 후: '시청완료' 클릭 시, 화면 변경과 서버 통신이 모두 들어있는 보상 함수를 호출합니다!
                 btnCloseVideo.onclick = () => {
-                    const viewLoading = document.getElementById('ad-view-loading');
-                    const viewFinished = document.getElementById('ad-view-finished');
-                    if (viewLoading) viewLoading.style.display = 'none';
-                    if (viewFinished) viewFinished.style.display = 'flex';
+                    if (typeof window.giveRewardFromApp === 'function') {
+                        window.giveRewardFromApp(); // 💰 실제 코인 지급 및 서버 저장 실행!
+                    }
                 };
             }
         }
@@ -3661,34 +3661,35 @@ window.waitForUserAndShowProfile = function() {
 // 💡 [최종 정리] 1. 고객센터 (이메일 안내창)
 const btnCustomerService = document.getElementById('btn-customer-service');
 if (btnCustomerService) {
-    btnCustomerService.addEventListener('click', (e) => {
+    const openCustomerService = (e) => {
         e.preventDefault();
         alert("게임 이용에 관한 문의 사항은 아래 이메일로 보내주세요!\n\n📧 kitworks.inc@gmail.com");
-    });
+    };
+    btnCustomerService.addEventListener('click', openCustomerService);
+    btnCustomerService.addEventListener('touchstart', openCustomerService, { passive: false });
 }
 
-// 💡 [최종 정리] 2. 이용약관 및 정책 (새 창 열기)
+// 💡 [최종 정리] 2. 이용약관 및 정책 (새 창 열기 + 안드로이드 앱 대응)
 const btnPrivacy = document.getElementById('btn-privacy-policy');
 if (btnPrivacy) {
-    btnPrivacy.addEventListener('click', (e) => {
+    const openPrivacy = (e) => {
         e.preventDefault();
         const notionUrl = 'https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31';
 
-        // 🚀 안드로이드 앱 환경(브릿지가 존재함)인 경우 -> 크롬 등 외부 브라우저 띄우기
         if (window.AndroidBridge && window.AndroidBridge.openExternalBrowser) {
             window.AndroidBridge.openExternalBrowser(notionUrl);
-        }
-        // PC 웹이나 일반 브라우저 환경인 경우 -> 새 창 띄우기
-        else {
+        } else {
             window.open(notionUrl, '_blank');
         }
-    });
+    };
+    btnPrivacy.addEventListener('click', openPrivacy);
+    btnPrivacy.addEventListener('touchstart', openPrivacy, { passive: false });
 }
 
 // 💡 [최종 정리] 3. 회원탈퇴 (확인창 후 DB 삭제)
 const btnDelete = document.getElementById('btn-delete-account');
 if (btnDelete) {
-    btnDelete.addEventListener('click', async (e) => {
+    const deleteAccount = async (e) => {
         e.preventDefault();
 
         const user = firebase.auth().currentUser;
@@ -3719,7 +3720,9 @@ if (btnDelete) {
                 alert("탈퇴 처리 중 오류가 발생했습니다: " + error.message);
             }
         }
-    });
+    };
+    btnDelete.addEventListener('click', deleteAccount);
+    btnDelete.addEventListener('touchstart', deleteAccount, { passive: false });
 }
 
 /* ============================================================
@@ -3778,38 +3781,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btnDelete) {
-        const deleteAccount = async (e) => {
-            e.preventDefault(); 
-            
-            const user = firebase.auth().currentUser;
-            if (!user) {
-                alert("로그인 정보가 없습니다.");
-                return;
-            }
-
-            const confirmMsg = "정말로 탈퇴하시겠습니까?\n보유 중인 코인, 뱃지, 멀티플레이 기록 등 모든 데이터가 영구적으로 삭제되며 절대 복구할 수 없습니다.";
-            if (!confirm(confirmMsg)) return; 
-
-            try {
-                await db.collection("users").doc(user.uid).delete();
-                console.log("🗑️ Firestore 유저 데이터 삭제 완료");
-
-                await user.delete();
-                console.log("🗑️ Firebase 계정 영구 삭제 완료");
-
-                alert("회원 탈퇴가 정상적으로 완료되었습니다. 이용해 주셔서 감사합니다.");
-                location.reload();
-
-            } catch (error) {
-                console.error("❌ 회원탈퇴 실패:", error);
-                if (error.code === 'auth/requires-recent-login') {
-                    alert("보안을 위해 다시 로그인한 후 탈퇴를 진행해 주세요.");
-                    firebase.auth().signOut().then(() => location.reload());
-                } else {
-                    alert("탈퇴 처리 중 오류가 발생했습니다: " + error.message);
-                }
-            }
-        };
         btnDelete.addEventListener('click', deleteAccount);
         // 안드로이드 화면에서 터치가 씹히지 않도록 강제 할당
         btnDelete.addEventListener('touchstart', deleteAccount, { passive: false });
