@@ -3457,7 +3457,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const msgEl = sceneDeleteRoomConfirm.querySelector('.modal-notice');
 
             if (currentRoom && currentRoom.status !== 'finished') {
-                msgEl.innerHTML = `현재 게임이 <strong class="text-red">진행 중</strong>입니다.<br><br>목록에서 삭제해도 기록은 유지되며, 최종 순위에 따라 리워드가 지급됩니다.<br><small class="text-gray">(단, 모든 참가자가 방을 삭제하면 방이 폭파되어 기록과 리워드가 소멸됩니다.)</small>`;
+                msgEl.innerHTML = `현재 게임이 <strong>진행 중</strong>입니다.<br>목록에서 삭제해도 기록은 유지되며, 최종 순위에 따라 리워드가 지급됩니다.<br>(단, 모든 참가자가 방을 삭제하면 방이 폭파되어 기록과 리워드가 소멸됩니다.)`;
             } else {
                 msgEl.innerHTML = `해당 게임을 참가중인 게임 목록에서 삭제합니다.`;
             }

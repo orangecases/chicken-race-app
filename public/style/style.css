@@ -1086,6 +1086,13 @@ html, body small{font-size: 70%;}
     content: '※';
 }
 
+.modal-notice {
+    color: #000;
+    font-size: 1rem;
+    text-align: center;
+}
+.modal-notice::before { content: '※ '; }
+
 .sns-login-group {
     display: flex;
     flex-direction: row;
