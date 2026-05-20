@@ -2296,6 +2296,7 @@ async function deleteCurrentRoom() {
 /**
  * [수정] '참가중인 목록'에서 내 정보를 완전히 삭제합니다.
  */
+// 💡 방 생명주기 논리를 반영한 목록 삭제 함수
 async function removeFromMyRooms() {
     if (!currentRoom || !currentRoom.id || !currentUser) return;
 
@@ -2305,41 +2306,59 @@ async function removeFromMyRooms() {
     const participantsRef = roomRef.collection('participants');
 
     try {
-        console.log(`🗑️ 내 목록에서 방 [${roomId}] 완전 삭제 시도...`);
+        console.log(`🗑️ 내 목록에서 방 [${roomId}] 숨김 및 상태 업데이트 시작...`);
 
-        // 1. [내 계정] joinedRooms 맵에서 해당 방 ID 필드를 아예 제거합니다.
+        // 1. [내 유저 정보 업데이트] 
+        // 🚨 삭제(delete)하지 않고 hidden: true를 주어 내 탭(레이스룸, 참가중)에서 완벽히 숨깁니다.
+        if (currentUser.joinedRooms[roomId]) currentUser.joinedRooms[roomId].hidden = true;
         await db.collection("users").doc(myId).update({
-            [`joinedRooms.${roomId}`]: firebase.firestore.FieldValue.delete()
+            [`joinedRooms.${roomId}.hidden`]: true
         });
 
-        // 2. [방 데이터] 방 안의 내 참가자 정보에도 '삭제됨(hidden)' 표시를 합니다.
+        // 2. [방의 참가자 서류 업데이트]
+        // 방 내부 참여자 명부에서도 나를 hidden: true로 마킹합니다.
         await participantsRef.doc(myId).update({ hidden: true });
 
-        // 3. [방폭 체크] 모든 참가자가 이 방을 목록에서 지웠는지 확인
+        // 3. [방 폭파 조건 및 게임 완료 조건 체크]
         const participantsSnapshot = await participantsRef.get();
-        let shouldExplode = true;
-
+        
+        let shouldExplode = true; // 참여했던 모든 사람이 전부 목록 삭제를 눌렀는가?
+        let allDead = true;       // 현재 참여한 사람들이 모두 게임을 끝냈는가?
+        
         participantsSnapshot.forEach(doc => {
-            if (!doc.data().hidden) {
-                shouldExplode = false; // 아직 한 명이라도 목록에 둔 사람이 있다면 유지
-            }
+            const data = doc.data();
+            if (!data.hidden) shouldExplode = false; // 단 한 명이라도 목록 삭제를 안 눌렀다면 방은 유지!
+            if (data.status !== 'dead') allDead = false;
         });
 
-        // 4. 모두가 지웠다면 방 전체 데이터 파괴
+        // 4. 개발자님 규칙 ①: 진짜로 참여했던 '모든' 사람이 삭제를 누른 경우에만 방 완전 폭파!
         if (shouldExplode) {
+            console.log(`💣 참여했던 모든 참가자가 삭제를 눌렀으므로 방 [${roomId}]을 완전히 폭파합니다.`);
             const batch = db.batch();
             participantsSnapshot.forEach(doc => { batch.delete(doc.ref); });
             batch.delete(roomRef);
             await batch.commit();
-            console.log(`💣 모든 참가자가 삭제하여 방 [${roomId}]이 완전히 증발했습니다.`);
+        } 
+        // 5. 개발자님 규칙 ②: 방은 폭파되지 않았지만(대기 상태), 정원이 꽉 찬 상태에서 모두 완료되었다면 심판(서버) 호출!
+        else {
+            const roomDoc = await roomRef.get();
+            if (roomDoc.exists) {
+                const roomData = roomDoc.data();
+                if (roomData.currentPlayers >= roomData.maxPlayers && allDead && roomData.status !== 'finished') {
+                    await roomRef.update({ status: 'finished' });
+                    console.log(`✅ 방 [${roomId}] 정원이 차고 모두 종료되어 'finished' 처리되었습니다. (서버 심판 발동)`);
+                } else {
+                    console.log(`⏳ 방 [${roomId}]은 자리가 남았거나 대기 중이므로 대기 상태를 유지합니다.`);
+                }
+            }
         }
 
-        console.log("✅ 데이터 정리 완료!");
+        console.log("✅ 데이터 처리 완료. 로비로 이동합니다.");
         await exitToLobby(false);
 
     } catch (error) {
-        console.error("❌ 목록 삭제 중 오류 발생:", error);
-        alert("데이터 삭제 중 오류가 발생했습니다.");
+        console.error("❌ 목록 삭제 처리 중 오류 발생:", error);
+        alert("처리에 실패했습니다.");
     }
 }
 
@@ -2977,34 +2996,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'force-delete':
                     console.log(`[Debug] Bot [${botId}] '목록 삭제' 시뮬레이션 시작`);
-
                     try {
                         const roomRefForDelete = db.collection('rooms').doc(currentRoom.id);
                         const participantRef = roomRefForDelete.collection('participants').doc(botId);
 
-                        // 1. 봇의 데이터는 지우지 않고 hidden: true만 설정
+                        // 봇도 명부에서 hidden: true 처리
                         await participantRef.update({ hidden: true });
 
-                        // 2. 방 안의 모든 참가자 상태 확인
+                        // 전원 삭제 여부 및 전체 플레이 완료 여부 체크
                         const participantsSnapshot = await roomRefForDelete.collection('participants').get();
                         let shouldExplode = true;
+                        let allDead = true;
 
                         participantsSnapshot.forEach(doc => {
-                            if (!doc.data().hidden) {
-                                shouldExplode = false;
-                            }
+                            const data = doc.data();
+                            if (!data.hidden) shouldExplode = false;
+                            if (data.status !== 'dead') allDead = false;
                         });
 
                         if (shouldExplode) {
-                            console.log(`💣 모든 참가자(봇 포함)가 목록 삭제됨. 방 [${currentRoom.id}] 완전 삭제!`);
-
-                            // 💡 [수정] 서브컬렉션 내부 문서들과 방 문서를 한 번에 싹 밀어버립니다.
+                            console.log(`💣 봇을 포함한 모든 참가자가 삭제함. 방 [${currentRoom.id}] 완전 삭제!`);
                             const batch = db.batch();
                             participantsSnapshot.forEach(doc => { batch.delete(doc.ref); });
                             batch.delete(roomRefForDelete);
                             await batch.commit();
-
                             exitToLobby(false);
+                        } else {
+                            const roomDoc = await roomRefForDelete.get();
+                            if (roomDoc.exists) {
+                                const roomData = roomDoc.data();
+                                // 봇이 지워지면서 게임이 모두 끝났는지 심판 호출 체크
+                                if (roomData.currentPlayers >= roomData.maxPlayers && allDead && roomData.status !== 'finished') {
+                                    await roomRefForDelete.update({ status: 'finished' });
+                                    console.log(`✅ 봇 목록 삭제로 방 [${currentRoom.id}] 정원 충족 종료.`);
+                                }
+                            }
                         }
                     } catch (err) {
                         console.error("❌ 봇 삭제 시뮬레이션 오류:", err);
@@ -3778,25 +3804,5 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("로그아웃 중 오류 발생: " + error.message);
             });
         });
-    }
-
-    // 💡 [안드로이드 터치 오류 완벽 해결] 버튼에 직접 이벤트 부착
-    const btnPrivacy = document.getElementById('btn-privacy-policy');
-    const btnDelete = document.getElementById('btn-delete-account');
-
-    if (btnPrivacy) {
-        // 터치(모바일)와 클릭(PC) 모두 즉시 반응하도록 설정
-        const openPrivacy = (e) => {
-            e.preventDefault(); 
-            window.open('https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31', '_blank');
-        };
-        btnPrivacy.addEventListener('click', openPrivacy);
-        btnPrivacy.addEventListener('touchstart', openPrivacy, { passive: false });
-    }
-
-    if (btnDelete) {
-        btnDelete.addEventListener('click', deleteAccount);
-        // 안드로이드 화면에서 터치가 씹히지 않도록 강제 할당
-        btnDelete.addEventListener('touchstart', deleteAccount, { passive: false });
     }
 });
