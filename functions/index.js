@@ -214,3 +214,50 @@ exports.distributeBadgesOnRoomFinish = functions.region(REGION).firestore
 
         return null;
     });
+
+    // 💡 [신규 추가] 매일 자정(밤 12시)에 실행되는 유령 방 청소 스케줄러
+exports.cleanupOldRooms = functions.region(REGION).pubsub.schedule('every 24 hours').timeZone('Asia/Seoul').onRun(async (context) => {
+    console.log("🧹 서버 청소 스케줄러 가동: 7일 지난 오래된 방을 정리합니다.");
+    const db = admin.firestore();
+    
+    // 기준 시간: 현재로부터 7일 전 (밀리초 계산)
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const cutoffDate = new Date(Date.now() - THIRTY_DAYS_MS);
+
+    try {
+        // 생성된 지 7일이 지난 방들을 모두 가져옵니다.
+        const oldRoomsSnapshot = await db.collection('rooms')
+            .where('createdAt', '<', cutoffDate)
+            .get();
+
+        if (oldRoomsSnapshot.empty) {
+            console.log("✅ 정리할 오래된 방이 없습니다.");
+            return null;
+        }
+
+        const batch = db.batch();
+        let deletedCount = 0;
+
+        // 찾은 오래된 방들을 하나씩 돌면서 하위 참가자 데이터와 함께 지웁니다.
+        for (const roomDoc of oldRoomsSnapshot.docs) {
+            // 1. 하위 컬렉션(participants) 삭제 
+            // (주의: 하위 컬렉션이 많지 않다는 가정하에 batch로 처리. 500개 제한이 있으나 1방당 최대 10명이므로 안전함)
+            const participantsSnap = await roomRef.collection('participants').get();
+            participantsSnap.forEach(pDoc => {
+                batch.delete(pDoc.ref);
+            });
+
+            // 2. 방 문서 본체 삭제
+            batch.delete(roomDoc.ref);
+            deletedCount++;
+        }
+
+        await batch.commit();
+        console.log(`🗑️ 총 ${deletedCount}개의 오래된 유령 방이 완벽하게 철거되었습니다.`);
+        
+    } catch (error) {
+        console.error("❌ 방 청소 스케줄러 실행 중 오류 발생:", error);
+    }
+    
+    return null;
+});
