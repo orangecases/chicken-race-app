@@ -143,3 +143,74 @@ exports.createUserDocument = functions.region(REGION).auth.user().onCreate(async
         throw error; // 실패 시 에러를 다시 던져서 Cloud Functions에 실패를 알림
     }
 });
+
+// 💡 [신규 추가] 방 상태가 'finished'로 업데이트될 때마다 실행되는 서버 심판 로직
+exports.distributeBadgesOnRoomFinish = functions.region(REGION).firestore
+    .document("rooms/{roomId}")
+    .onUpdate(async (change, context) => {
+        const beforeData = change.before.data();
+        const afterData = change.after.data();
+        const roomId = context.params.roomId;
+
+        // 1. 방 상태가 방금 막 'finished'로 변경된 경우에만 작동!
+        if (beforeData.status !== "finished" && afterData.status === "finished") {
+            console.log(`🏆 방 [${roomId}] 종료 감지. 뱃지 지급 심판 등판!`);
+
+            const db = admin.firestore();
+            const participantsRef = db.collection(`rooms/${roomId}/participants`);
+            const snapshot = await participantsRef.get();
+
+            if (snapshot.empty) {
+                console.log("참가자가 없어 종료합니다.");
+                return null;
+            }
+
+            let players = [];
+            snapshot.forEach(doc => {
+                players.push(doc.data());
+            });
+
+            // 2. 4인 이상 참여한 방인지 검증 (기획 규칙 적용)
+            if (players.length < 4) {
+                console.log(`인원 미달(${players.length}명)로 뱃지를 지급하지 않습니다.`);
+                return null;
+            }
+
+            // 3. 디스플레이 점수(displayScore) 기준으로 내림차순 정렬 (1등부터 줄 세우기)
+            players.sort((a, b) => (b.displayScore || 0) - (a.displayScore || 0));
+
+            const batch = db.batch();
+            let awardedCount = 0;
+
+            // 4. 1등~3등까지만 뱃지 지급
+            for (let i = 0; i < players.length; i++) {
+                if (i >= 3) break; // 4등부터는 탈락
+
+                const player = players[i];
+                
+                // 봇(isBot)이 아닌 실제 유저에게만 뱃지 지급
+                if (!player.isBot && player.id) {
+                    const rank = i + 1; // 1, 2, 3
+                    const userRef = db.collection("users").doc(player.id);
+                    
+                    // Firestore의 'increment' 기능을 써서 안전하게 뱃지 카운트 +1
+                    batch.update(userRef, {
+                        [`badges.${rank}`]: admin.firestore.FieldValue.increment(1)
+                    });
+                    
+                    console.log(`🥇 유저 [${player.name}]에게 ${rank}등 뱃지 지급 완료!`);
+                    awardedCount++;
+                }
+            }
+
+            // 5. 서버에 일괄 저장(Commit)
+            if (awardedCount > 0) {
+                await batch.commit();
+                console.log(`✅ 총 ${awardedCount}명의 유저에게 뱃지 지급 완료.`);
+            } else {
+                console.log(`지급 대상(실제 유저)이 없어 뱃지를 지급하지 않았습니다.`);
+            }
+        }
+
+        return null;
+    });

@@ -426,35 +426,6 @@ function setControlsVisibility(visible) {
     }
 }
 
-/**
- * [신규] 멀티플레이 종료 시 순위에 따른 뱃지 지급 및 저장
- */
-function awardBadgeIfEligible() {
-    if (!isLoggedIn || !currentUser || currentGameMode !== 'multi' || !currentRoom) return;
-
-    // [신규] 4인 이상 참여한 게임에서만 뱃지 지급
-    if (multiGamePlayers.length < 4) return;
-
-    const myId = currentUser.id;
-    const isTotalMode = currentRoom.rankType === 'total';
-
-    const sortedPlayers = [...multiGamePlayers].map(p => {
-        let displayScore = 0;
-        if (isTotalMode) {
-            displayScore = p.totalScore + (p.status === 'playing' ? p.score : 0);
-        } else {
-            displayScore = Math.max(p.bestScore, p.score);
-        }
-        return { ...p, displayScore };
-    }).sort((a, b) => b.displayScore - a.displayScore);
-
-    const myRank = sortedPlayers.findIndex(p => p.id === myId) + 1;
-    if (myRank >= 1 && myRank <= 3) {
-        currentUser.badges[myRank] = (currentUser.badges[myRank] || 0) + 1;
-        saveUserDataToFirestore();
-    }
-}
-
 // [신규] 사운드 재생 헬퍼 함수
 function playSound(key) {
     if (!isSoundOn || !audios[key]) return;
@@ -750,8 +721,6 @@ function handleGameOverUI() {
             if (myPlayer) myPlayer.status = 'dead';
             // [2단계] Firestore 상태 업데이트
             participantDocRef.update({ status: 'dead' }).catch(e => console.error("상태 업데이트 실패(dead)", e));
-
-            awardBadgeIfEligible(); // [신규] 모든 기회 소진 시 뱃지 수여 판단
 
             btnRestart.style.display = 'none';
             if (btnDeleteRoom) btnDeleteRoom.style.display = 'block';
@@ -1604,8 +1573,6 @@ async function performServerExit(roomId, isFullExit) {
 
             const participantRef = roomRef.collection('participants').doc(myId);
             await participantRef.update({ status: 'dead' });
-
-            awardBadgeIfEligible();
 
             // 🚨 [신규 추가] 내가 포기함(dead)으로써 방의 모든 인원이 dead 상태가 되었는지 즉시 확인합니다.
             const participantsSnapshot = await roomRef.collection('participants').get();
