@@ -3010,7 +3010,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'force-delete':
                     console.log(`[Debug] Bot [${botId}] '목록 삭제' 시뮬레이션 시작`);
-                    
+
                     try {
                         const roomRefForDelete = db.collection('rooms').doc(currentRoom.id);
                         const participantRef = roomRefForDelete.collection('participants').doc(botId);
@@ -3024,13 +3024,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         participantsSnapshot.forEach(doc => {
                             if (!doc.data().hidden) {
-                                shouldExplode = false; 
+                                shouldExplode = false;
                             }
                         });
 
                         if (shouldExplode) {
                             console.log(`💣 모든 참가자(봇 포함)가 목록 삭제됨. 방 [${currentRoom.id}] 완전 삭제!`);
-                            await roomRefForDelete.delete();
+
+                            // 💡 [수정] 서브컬렉션 내부 문서들과 방 문서를 한 번에 싹 밀어버립니다.
+                            const batch = db.batch();
+                            participantsSnapshot.forEach(doc => { batch.delete(doc.ref); });
+                            batch.delete(roomRefForDelete);
+                            await batch.commit();
+
                             exitToLobby(false);
                         }
                     } catch (err) {
@@ -3475,10 +3481,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnExitCancel) {
         btnExitCancel.onclick = () => { if (sceneExitConfirm) sceneExitConfirm.classList.add('hidden'); };
     }
-    // 🚨 [추가] '참가중인 목록에서 삭제' 버튼을 눌렀을 때 확인 모달 띄우기
+    // 🚨 '참가중인 목록에서 삭제' 버튼을 눌렀을 때 확인 모달 띄우기 (상태별 문구)
     if (btnDeleteRoom) {
         btnDeleteRoom.onclick = () => {
             const sceneDeleteRoomConfirm = document.getElementById('scene-delete-room-confirm');
+
+            // 💡 [핵심 변경] HTML에서 바꾼 클래스 이름('.modal-notice')으로 찾아오도록 수정합니다.
+            const msgEl = sceneDeleteRoomConfirm.querySelector('.modal-notice');
+
+            if (currentRoom && currentRoom.status !== 'finished') {
+                msgEl.innerHTML = `현재 게임이 <strong class="text-red">진행 중</strong>입니다.<br><br>목록에서 삭제해도 기록은 유지되며, 최종 순위에 따라 리워드가 지급됩니다.<br><small class="text-gray">(단, 모든 참가자가 방을 삭제하면 방이 폭파되어 기록과 리워드가 소멸됩니다.)</small>`;
+            } else {
+                msgEl.innerHTML = `해당 게임을 참가중인 게임 목록에서 삭제합니다.`;
+            }
+
             if (sceneDeleteRoomConfirm) sceneDeleteRoomConfirm.classList.remove('hidden');
         };
     }
@@ -3702,6 +3718,37 @@ if (btnDelete) {
         if (!confirm(confirmMsg)) return;
 
         try {
+            // 💡 [추가] 탈퇴 전, 내가 참여 중이던 방들을 유령 방으로 만들지 않기 위해 사전 정리 작업 진행
+            if (currentUser && currentUser.joinedRooms) {
+                const roomIds = Object.keys(currentUser.joinedRooms);
+                for (const roomId of roomIds) {
+                    try {
+                        const roomRef = db.collection('rooms').doc(roomId);
+                        const participantsRef = roomRef.collection('participants');
+
+                        // 1. 해당 방의 내 참가자 정보를 hidden으로 업데이트
+                        await participantsRef.doc(user.uid).update({ hidden: true });
+
+                        // 2. 방이 폭파될 조건인지 다시 확인
+                        const participantsSnapshot = await participantsRef.get();
+                        let shouldExplode = true;
+                        participantsSnapshot.forEach(doc => {
+                            if (!doc.data().hidden) shouldExplode = false;
+                        });
+
+                        // 3. 내가 마지막 생존자(?)였다면 방을 폭파
+                        if (shouldExplode) {
+                            const batch = db.batch();
+                            participantsSnapshot.forEach(doc => { batch.delete(doc.ref); });
+                            batch.delete(roomRef);
+                            await batch.commit();
+                            console.log(`💣 탈퇴 유저 정리로 인해 방 [${roomId}]이 폭파되었습니다.`);
+                        }
+                    } catch (roomErr) {
+                        console.error(`탈퇴 중 방 [${roomId}] 데이터 정리에 실패했으나 탈퇴를 계속 진행합니다:`, roomErr);
+                    }
+                }
+            }
             await db.collection("users").doc(user.uid).delete();
             console.log("🗑️ Firestore 유저 데이터 삭제 완료");
 
