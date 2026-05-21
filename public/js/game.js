@@ -3,6 +3,23 @@
  */
 
 // [1. 전역 변수 및 게임 설정]
+// 💡 안드로이드 & iOS 통합 네이티브 통신 브릿지 (전역 함수)
+window.invokeNativeApp = function(action, data = null) {
+    // 1. 안드로이드 (AndroidBridge) 호출
+    if (window.AndroidBridge && typeof window.AndroidBridge[action] === 'function') {
+        if (data !== null) window.AndroidBridge[action](data);
+        else window.AndroidBridge[action]();
+    } 
+    // 2. 아이폰 iOS (WKWebView) 호출
+    else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[action]) {
+        if (data !== null) window.webkit.messageHandlers[action].postMessage(data);
+        else window.webkit.messageHandlers[action].postMessage('');
+    } 
+    // 3. 일반 웹 브라우저 (PC 테스트용)
+    else {
+        console.log(`[Web Debug] Native action '${action}' called with data:`, data);
+    }
+};
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 1248;
@@ -2404,10 +2421,10 @@ function watchAdAndGetReward() {
     }
 
     // 🌟 [핵심 마법] 만약 이 게임이 '스마트폰 앱'으로 포장되어 실행 중이라면?!
-    if (window.AndroidBridge && window.AndroidBridge.showAd) {
-        console.log("📱 스마트폰 앱 환경 감지됨! 진짜 구글 광고를 부릅니다.");
-        window.AndroidBridge.showAd(); // 앱의 네이티브(진짜) 광고 시스템 호출
-        return; // 진짜 광고를 띄웠으니, 아래의 가짜 웹 광고는 실행하지 않고 멈춥니다!
+    if (window.AndroidBridge || (window.webkit && window.webkit.messageHandlers.showAd)) {
+        console.log("📱 스마트폰 앱 환경 감지됨! 네이티브 구글 광고를 부릅니다.");
+        window.invokeNativeApp('showAd'); 
+        return;
     }
 
     // 💻 앱이 아니라면 (기존처럼 컴퓨터 인터넷 창이라면) 10초짜리 가짜 광고를 보여줍니다.
@@ -2567,8 +2584,8 @@ function resetRoomData() {
  * 구글 로그인 함수
  */
 function loginWithGoogle() {
-    if (window.AndroidBridge && window.AndroidBridge.requestGoogleLogin) {
-        window.AndroidBridge.requestGoogleLogin();
+    if (window.AndroidBridge || (window.webkit && window.webkit.messageHandlers.requestGoogleLogin)) {
+        window.invokeNativeApp('requestGoogleLogin');
     } else {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('profile');
@@ -3694,9 +3711,9 @@ if (btnPrivacy) {
         e.preventDefault();
         const notionUrl = 'https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31';
 
-        if (window.AndroidBridge && window.AndroidBridge.openExternalBrowser) {
-            window.AndroidBridge.openExternalBrowser(notionUrl);
-        } else {
+        if (window.AndroidBridge || (window.webkit && window.webkit.messageHandlers.openExternalBrowser)) {
+        window.invokeNativeApp('openExternalBrowser', notionUrl);
+    } else {
             window.open(notionUrl, '_blank');
         }
     };
