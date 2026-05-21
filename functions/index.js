@@ -144,7 +144,7 @@ exports.createUserDocument = functions.region(REGION).auth.user().onCreate(async
     }
 });
 
-// 💡 [신규 추가] 방 상태가 'finished'로 업데이트될 때마다 실행되는 서버 심판 로직
+// 💡 1. 방 상태가 'finished'로 업데이트될 때마다 실행되는 서버 심판 로직 (뱃지 지급)
 exports.distributeBadgesOnRoomFinish = functions.region(REGION).firestore
     .document("rooms/{roomId}")
     .onUpdate(async (change, context) => {
@@ -152,7 +152,7 @@ exports.distributeBadgesOnRoomFinish = functions.region(REGION).firestore
         const afterData = change.after.data();
         const roomId = context.params.roomId;
 
-        // 1. 방 상태가 방금 막 'finished'로 변경된 경우에만 작동!
+        // 방 상태가 방금 막 'finished'로 변경된 경우에만 작동!
         if (beforeData.status !== "finished" && afterData.status === "finished") {
             console.log(`🏆 방 [${roomId}] 종료 감지. 뱃지 지급 심판 등판!`);
 
@@ -160,29 +160,18 @@ exports.distributeBadgesOnRoomFinish = functions.region(REGION).firestore
             const participantsRef = db.collection(`rooms/${roomId}/participants`);
             const snapshot = await participantsRef.get();
 
-            if (snapshot.empty) {
-                console.log("참가자가 없어 종료합니다.");
-                return null;
-            }
+            if (snapshot.empty) return null;
 
             let players = [];
-            snapshot.forEach(doc => {
-                players.push(doc.data());
-            });
+            snapshot.forEach(doc => { players.push(doc.data()); });
 
-            // 2. 4인 이상 참여한 방인지 검증 (기획 규칙 적용)
-            if (players.length < 4) {
-                console.log(`인원 미달(${players.length}명)로 뱃지를 지급하지 않습니다.`);
-                return null;
-            }
-
-            // 3. 디스플레이 점수(displayScore) 기준으로 내림차순 정렬 (1등부터 줄 세우기)
+            // 디스플레이 점수(displayScore) 기준으로 내림차순 정렬 (1등부터 줄 세우기)
             players.sort((a, b) => (b.displayScore || 0) - (a.displayScore || 0));
 
             const batch = db.batch();
             let awardedCount = 0;
 
-            // 4. 1등~3등까지만 뱃지 지급
+            // 1등~3등까지만 뱃지 지급
             for (let i = 0; i < players.length; i++) {
                 if (i >= 3) break; // 4등부터는 탈락
 
@@ -198,66 +187,47 @@ exports.distributeBadgesOnRoomFinish = functions.region(REGION).firestore
                         [`badges.${rank}`]: admin.firestore.FieldValue.increment(1)
                     });
                     
-                    console.log(`🥇 유저 [${player.name}]에게 ${rank}등 뱃지 지급 완료!`);
+                    console.log(`🥇 유저 [${player.name}]에게 ${rank}등 뱃지 지급 준비 완료!`);
                     awardedCount++;
                 }
             }
 
-            // 5. 서버에 일괄 저장(Commit)
+            // 서버에 일괄 저장(Commit)
             if (awardedCount > 0) {
                 await batch.commit();
                 console.log(`✅ 총 ${awardedCount}명의 유저에게 뱃지 지급 완료.`);
-            } else {
-                console.log(`지급 대상(실제 유저)이 없어 뱃지를 지급하지 않았습니다.`);
             }
         }
-
         return null;
     });
 
-    // 💡 [신규 추가] 매일 자정(밤 12시)에 실행되는 유령 방 청소 스케줄러
+// 💡 2. 매일 자정(밤 12시)에 실행되는 유령 방 청소 스케줄러
 exports.cleanupOldRooms = functions.region(REGION).pubsub.schedule('every 24 hours').timeZone('Asia/Seoul').onRun(async (context) => {
-    console.log("🧹 서버 청소 스케줄러 가동: 7일 지난 오래된 방을 정리합니다.");
+    console.log("🧹 서버 청소 스케줄러 가동: 30일 지난 오래된 방을 정리합니다.");
     const db = admin.firestore();
     
-    // 기준 시간: 현재로부터 7일 전 (밀리초 계산)
+    // 기준 시간: 현재로부터 30일 전 (밀리초 계산)
     const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
     const cutoffDate = new Date(Date.now() - THIRTY_DAYS_MS);
 
     try {
-        // 생성된 지 7일이 지난 방들을 모두 가져옵니다.
-        const oldRoomsSnapshot = await db.collection('rooms')
-            .where('createdAt', '<', cutoffDate)
-            .get();
-
-        if (oldRoomsSnapshot.empty) {
-            console.log("✅ 정리할 오래된 방이 없습니다.");
-            return null;
-        }
+        const oldRoomsSnapshot = await db.collection('rooms').where('createdAt', '<', cutoffDate).get();
+        if (oldRoomsSnapshot.empty) return null;
 
         const batch = db.batch();
         let deletedCount = 0;
 
-        // 찾은 오래된 방들을 하나씩 돌면서 하위 참가자 데이터와 함께 지웁니다.
         for (const roomDoc of oldRoomsSnapshot.docs) {
-            // 1. 하위 컬렉션(participants) 삭제 
-            // (주의: 하위 컬렉션이 많지 않다는 가정하에 batch로 처리. 500개 제한이 있으나 1방당 최대 10명이므로 안전함)
-            const participantsSnap = await roomRef.collection('participants').get();
-            participantsSnap.forEach(pDoc => {
-                batch.delete(pDoc.ref);
-            });
-
-            // 2. 방 문서 본체 삭제
+            const participantsSnap = await roomDoc.ref.collection('participants').get();
+            participantsSnap.forEach(pDoc => { batch.delete(pDoc.ref); });
             batch.delete(roomDoc.ref);
             deletedCount++;
         }
 
         await batch.commit();
-        console.log(`🗑️ 총 ${deletedCount}개의 오래된 유령 방이 완벽하게 철거되었습니다.`);
-        
+        console.log(`🗑️ 총 ${deletedCount}개의 오래된 유령 방 철거 완료.`);
     } catch (error) {
-        console.error("❌ 방 청소 스케줄러 실행 중 오류 발생:", error);
+        console.error("❌ 방 청소 스케줄러 실행 중 오류:", error);
     }
-    
     return null;
 });
