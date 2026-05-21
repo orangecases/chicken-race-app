@@ -2319,37 +2319,41 @@ async function removeFromMyRooms() {
         // 방 내부 참여자 명부에서도 나를 hidden: true로 마킹합니다.
         await participantsRef.doc(myId).update({ hidden: true });
 
-        // 3. [방 폭파 조건 및 게임 완료 조건 체크]
+     // 3. [방 폭파 조건 및 게임 완료 조건 체크]
         const participantsSnapshot = await participantsRef.get();
-        
+        const roomDoc = await roomRef.get();
+        const roomData = roomDoc.exists ? roomDoc.data() : null;
+        if (!roomData) return; // 방 데이터가 아예 없으면 종료
+
         let shouldExplode = true; // 참여했던 모든 사람이 전부 목록 삭제를 눌렀는가?
         let allDead = true;       // 현재 참여한 사람들이 모두 게임을 끝냈는가?
-        
+
         participantsSnapshot.forEach(doc => {
             const data = doc.data();
-            if (!data.hidden) shouldExplode = false; // 단 한 명이라도 목록 삭제를 안 눌렀다면 방은 유지!
+            if (!data.hidden) shouldExplode = false;
             if (data.status !== 'dead') allDead = false;
         });
 
-        // 4. 개발자님 규칙 ①: 진짜로 참여했던 '모든' 사람이 삭제를 누른 경우에만 방 완전 폭파!
+        // 🚨 [핵심 버그 수정] 방의 현재 참여 인원이 최대 정원(limit)에 도달하지 않았다면 절대 폭파 금지!
+        if (roomData.currentPlayers < roomData.maxPlayers) {
+            shouldExplode = false;
+        }
+
+        // 4. 진짜로 참여했던 '모든' 사람이 삭제를 눌렀고 & '정원이 꽉 찼던 방'일 경우에만 완전 폭파!
         if (shouldExplode) {
             console.log(`💣 참여했던 모든 참가자가 삭제를 눌렀으므로 방 [${roomId}]을 완전히 폭파합니다.`);
             const batch = db.batch();
             participantsSnapshot.forEach(doc => { batch.delete(doc.ref); });
             batch.delete(roomRef);
             await batch.commit();
-        } 
-        // 5. 개발자님 규칙 ②: 방은 폭파되지 않았지만(대기 상태), 정원이 꽉 찬 상태에서 모두 완료되었다면 심판(서버) 호출!
+        }
+        // 5. 방은 폭파되지 않았지만(대기 상태), 정원이 꽉 찬 상태에서 모두 완료되었다면 심판(서버) 호출!
         else {
-            const roomDoc = await roomRef.get();
-            if (roomDoc.exists) {
-                const roomData = roomDoc.data();
-                if (roomData.currentPlayers >= roomData.maxPlayers && allDead && roomData.status !== 'finished') {
-                    await roomRef.update({ status: 'finished' });
-                    console.log(`✅ 방 [${roomId}] 정원이 차고 모두 종료되어 'finished' 처리되었습니다. (서버 심판 발동)`);
-                } else {
-                    console.log(`⏳ 방 [${roomId}]은 자리가 남았거나 대기 중이므로 대기 상태를 유지합니다.`);
-                }
+            if (roomData.currentPlayers >= roomData.maxPlayers && allDead && roomData.status !== 'finished') {
+                await roomRef.update({ status: 'finished' });
+                console.log(`✅ 방 [${roomId}] 정원이 차고 모두 종료되어 'finished' 처리되었습니다. (서버 심판 발동)`);
+            } else {
+                console.log(`⏳ 방 [${roomId}]은 자리가 남았거나 대기 중이므로 대기 상태를 유지합니다.`);
             }
         }
 
@@ -3003,7 +3007,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         // 봇도 명부에서 hidden: true 처리
                         await participantRef.update({ hidden: true });
 
-                        // 전원 삭제 여부 및 전체 플레이 완료 여부 체크
+                        // 💡 [추가] 방 정보를 먼저 가져옵니다.
+                        const roomDoc = await roomRefForDelete.get();
+                        const roomData = roomDoc.exists ? roomDoc.data() : null;
+
                         const participantsSnapshot = await roomRefForDelete.collection('participants').get();
                         let shouldExplode = true;
                         let allDead = true;
@@ -3014,6 +3021,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (data.status !== 'dead') allDead = false;
                         });
 
+                        // 🚨 [핵심 버그 수정] 봇 삭제 시에도 방 정원이 차지 않았다면 폭파 방지!
+                        if (roomData && roomData.currentPlayers < roomData.maxPlayers) {
+                            shouldExplode = false;
+                        }
+
                         if (shouldExplode) {
                             console.log(`💣 봇을 포함한 모든 참가자가 삭제함. 방 [${currentRoom.id}] 완전 삭제!`);
                             const batch = db.batch();
@@ -3022,10 +3034,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             await batch.commit();
                             exitToLobby(false);
                         } else {
-                            const roomDoc = await roomRefForDelete.get();
-                            if (roomDoc.exists) {
-                                const roomData = roomDoc.data();
-                                // 봇이 지워지면서 게임이 모두 끝났는지 심판 호출 체크
+                            if (roomData) {
                                 if (roomData.currentPlayers >= roomData.maxPlayers && allDead && roomData.status !== 'finished') {
                                     await roomRefForDelete.update({ status: 'finished' });
                                     console.log(`✅ 봇 목록 삭제로 방 [${currentRoom.id}] 정원 충족 종료.`);
