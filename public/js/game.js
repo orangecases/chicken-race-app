@@ -35,7 +35,7 @@ let level = 1; // [신규] 레벨 변수
 let myScores = []; // 내 기록 배열
 let bestScore = 0; // 최고 기록 (myScores에서 파생)
 let top100Scores = []; // Top 100 더미 데이터
-let nextLevelFrameThreshold = 600; // [수정] 난이도 상승 기준 (프레임 단위, 600프레임 ≒ 10초)
+let nextLevelFrameThreshold = 400; // 난이도 상승 기준 (약 6.5초)
 let currentGameMode = 'single';
 let isGameReady = false;
 let gameLoopId = null;
@@ -331,33 +331,51 @@ function createFeatherExplosion(x, y) {
 function handleObstacles() {
     if (gameState === STATE.PLAYING) {
         obstacleTimer += speedMultiplier;
-        // [수정] 장애물 빈도 증가 (기존: 110+60 -> 80+50) - 화면에 더 자주 등장하도록 조정
-        if (obstacleTimer > 60 + Math.random() * 40) {
-            obstacleTimer = 0; // 타이머를 즉시 리셋
 
-            // [수정] 복합 패턴 등장 시점을 3000점에서 1000점으로 앞당김
-            if (score > 400) {
+        // 💡 [핵심] 개발자님의 기획을 반영한 3단계 맞춤형 스폰 로직
+        let spawnThreshold = 0;
+        let allowComplexPatterns = false;
+
+        if (level <= 3) {
+            // 🟢 1단계 (LV 1~3): 부스트 학습 구간 
+            // - 속도가 느림. 장애물이 매우 띄엄띄엄 나옴 (부스트 마음껏 사용 가능)
+            spawnThreshold = 130 + Math.random() * 50; 
+            allowComplexPatterns = false;
+        } else if (level <= 7) {
+            // 🟡 2단계 (LV 4~7): 패턴 대응 구간 
+            // - 속도 빠름. 장애물 간격이 매우 좁고 복합 패턴이 쏟아짐 (부스트 짧게 끊어 쓰기)
+            spawnThreshold = 65 + Math.random() * 35;
+            allowComplexPatterns = true;
+        } else {
+            // 🔴 3단계 (LV 8~): 초고속 서바이벌 구간
+            // - 속도가 미친듯이 빠름. 장애물 간격이 다시 넓어짐 (순수 반사신경 요구)
+            spawnThreshold = 110 + Math.random() * 40; 
+            allowComplexPatterns = false; // 너무 빨라서 복합 패턴은 불합리하므로 단일 장애물만!
+        }
+
+        if (obstacleTimer > spawnThreshold) {
+            obstacleTimer = 0; // 즉시 리셋
+
+            if (allowComplexPatterns) {
                 const patternType = Math.random();
-                if (patternType < 0.25) { // 25% 확률: 단일 불꽃
+                if (patternType < 0.25) { 
                     obstacles.push(new Obstacle('fire'));
-                } else if (patternType < 0.5) { // 25% 확률: 단일 독수리
+                } else if (patternType < 0.5) { 
                     obstacles.push(new Obstacle('eagle'));
-                } else if (patternType < 0.75) { // 25% 확률: 이중 불꽃 (붙음 - 긴 점프로 회피)
+                } else if (patternType < 0.75) { // 이중 불꽃 (긴 점프)
                     const fire1 = new Obstacle('fire');
                     const fire2 = new Obstacle('fire');
-                    // [수정] 간격을 넓혀서(140) 한 번의 긴 점프로 넘도록 유도
                     fire2.x = fire1.x + 140;
                     obstacles.push(fire1, fire2);
-                } else { // 25% 확률: 떨어진 이중 불꽃 (짧게 두 번 연속 점프)
+                } else { // 떨어진 이중 불꽃 (따닥 점프)
                     const fire1 = new Obstacle('fire');
                     const fire2 = new Obstacle('fire');
-                    // [수정] 간격을 좁혀서(260) 착지 후 즉시 다시 뛰어야 함 (따닥!)
                     fire2.x = fire1.x + 260;
                     obstacles.push(fire1, fire2);
                     obstacleTimer = -20; // 패턴 길이 보정
                 }
             } else {
-                // 1000점 미만일 때는 기본 장애물만 등장 (50% 확률)
+                // 1단계, 3단계에서는 불합리한 억까 패턴 없이 단일 장애물만 나옵니다.
                 obstacles.push(new Obstacle(Math.random() < 0.5 ? 'fire' : 'eagle'));
             }
         }
@@ -542,7 +560,7 @@ function resetGame() {
         baseGameSpeed = 15;
         gameSpeed = baseGameSpeed;
         level = 1;
-        nextLevelFrameThreshold = 600;
+        nextLevelFrameThreshold = 400;
     } else {
         // 멀티플레이 재시작 시: 기존 레벨과 기본 속도 유지
         console.log(`🚀 멀티플레이 재시작: 난이도 유지 (LV.${level}, Speed:${baseGameSpeed})`);
@@ -902,8 +920,8 @@ function gameLoop() {
 
         // 3. 난이도 조절: 시간에 따라 게임 속도 증가 (프레임 기준)
         if (gameFrame >= nextLevelFrameThreshold) {
-            baseGameSpeed += 0.8;
-            nextLevelFrameThreshold += 360; // 다음 레벨까지 10초 추가
+            baseGameSpeed += 1.0;           // 💡 [수정] 속도 증가폭 상향 (0.8 -> 1.0)
+            nextLevelFrameThreshold += 400; // 💡 [수정] 600프레임에서 400프레임(약 6.5초)마다 폭풍 레벨업!
             level++;
             const levelEl = document.querySelector('.hud-level');
             if (levelEl) levelEl.innerText = 'LV.' + level;
