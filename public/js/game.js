@@ -215,7 +215,8 @@ class Dog {
     update() {
         if (gameState !== STATE.PLAYING) { this.targetX = this.initialX; this.x += (this.targetX - this.x) * 0.05; }
         else {
-            if (chicken.isBoosting) { this.targetX = 50; this.x += (this.targetX - this.x) * 0.008; }
+            // 💡 [수정] 강아지가 화면에 치고 나오는 속도를 대폭 단축 (0.008 -> 0.04)
+            if (chicken.isBoosting) { this.targetX = 50; this.x += (this.targetX - this.x) * 0.04; }
             else { this.targetX = this.initialX; this.x += (this.targetX - this.x) * 0.04; }
         }
         this.frame++;
