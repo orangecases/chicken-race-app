@@ -332,11 +332,11 @@ function handleObstacles() {
     if (gameState === STATE.PLAYING) {
         obstacleTimer += speedMultiplier;
         // [수정] 장애물 빈도 증가 (기존: 110+60 -> 80+50) - 화면에 더 자주 등장하도록 조정
-        if (obstacleTimer > 80 + Math.random() * 50) {
+        if (obstacleTimer > 60 + Math.random() * 40) {
             obstacleTimer = 0; // 타이머를 즉시 리셋
 
             // [수정] 복합 패턴 등장 시점을 3000점에서 1000점으로 앞당김
-            if (score > 1000) {
+            if (score > 400) {
                 const patternType = Math.random();
                 if (patternType < 0.25) { // 25% 확률: 단일 불꽃
                     obstacles.push(new Obstacle('fire'));
@@ -903,7 +903,7 @@ function gameLoop() {
         // 3. 난이도 조절: 시간에 따라 게임 속도 증가 (프레임 기준)
         if (gameFrame >= nextLevelFrameThreshold) {
             baseGameSpeed += 0.8;
-            nextLevelFrameThreshold += 600; // 다음 레벨까지 10초 추가
+            nextLevelFrameThreshold += 360; // 다음 레벨까지 10초 추가
             level++;
             const levelEl = document.querySelector('.hud-level');
             if (levelEl) levelEl.innerText = 'LV.' + level;
