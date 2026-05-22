@@ -443,9 +443,10 @@ function updateButtonCosts() {
         if (restartCostVal) restartCostVal.innerText = '1';
     } else if (currentGameMode === 'multi' && currentRoom) {
         // 멀티모드: 시작 버튼에는 방 설정 시의 시도 횟수(비용) 표시
-        // [수정] 이미 지불했는지 확인하여 비용 표시 (지불했으면 0)
+        // 이미 지불했는지 확인하여 비용 표시 (지불했으면 0)
         const userRoomState = (currentUser && currentUser.joinedRooms) ? currentUser.joinedRooms[currentRoom.id] : null;
-        const cost = (userRoomState && userRoomState.isPaid) ? 0 : currentRoom.attempts;
+        // 💡 횟수와 상관없이 지불 안 했으면 무조건 2코인으로 표시!
+        const cost = (userRoomState && userRoomState.isPaid) ? 0 : 2;
         if (startCostVal) startCostVal.innerText = cost;
         // 멀티모드: 재시작 버튼에서는 코인 표시 숨김 (이미 지불됨)
         if (restartCostSpan) restartCostSpan.style.display = 'none';
@@ -3427,12 +3428,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-
-            if (currentUser.coins < attempts) {
-                alert(`코인이 부족합니다.\n(필요: ${attempts}, 보유: ${currentUser.coins})`);
-                return;
-            }
-
             try {
                 const roomRef = db.collection("rooms").doc(); 
 
@@ -3583,7 +3578,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentGameMode === 'multi' && currentRoom && currentUser) {
                 const userRoomState = currentUser.joinedRooms[currentRoom.id];
                 if (userRoomState && !userRoomState.isPaid) {
-                    const cost = currentRoom.attempts;
+                    
+                    // 💡 횟수와 상관없이 무조건 2코인만 뺍니다!
+                    const cost = 2; 
+                    
                     if (currentUser.coins < cost) {
                         alert(`코인이 부족합니다.\n(필요: ${cost}, 보유: ${currentUser.coins})`);
                         return;
