@@ -218,13 +218,13 @@ class Dog {
             this.x += (this.targetX - this.x) * 0.05;
         } else {
             if (chicken.isBoosting) {
-                // 💡 [핵심 해결] 강아지의 최고 목표는 50이지만, 무조건 치킨보다 300px 뒤에 있도록 강제합니다!
+                // [유지] 다가오는 속도는 만족하셨으므로 0.04 그대로 둡니다.
                 this.targetX = Math.min(50, chicken.x - 300);
-                // 속도를 0.04로 빠르게 올려도 겹치지 않고 안전하게 쫓아옵니다.
                 this.x += (this.targetX - this.x) * 0.04;
             } else {
                 this.targetX = this.initialX;
-                this.x += (this.targetX - this.x) * 0.04;
+                // 💡 [수정] 멀어질 때의 속도를 확 줄여서(0.04 -> 0.015) 화면에 조금 더 오래 머물게 합니다!
+                this.x += (this.targetX - this.x) * 0.015;
             }
         }
         this.frame++;
