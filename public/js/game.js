@@ -3140,6 +3140,13 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         range.addEventListener('input', updateRangeProgress);
         updateRangeProgress();
+
+        // 💡 [여기에 추가!] 슬라이더를 터치할 때마다 강제로 키보드를 내리고 포커스를 없앱니다.
+        range.addEventListener('touchstart', () => {
+            if (document.activeElement) {
+                document.activeElement.blur(); 
+            }
+        }, { passive: true });
     });
 
     const btnJump = document.getElementById('btn-jump');
