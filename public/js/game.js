@@ -341,37 +341,35 @@ function handleObstacles() {
     if (gameState === STATE.PLAYING) {
         obstacleTimer += speedMultiplier;
 
-        // 💡 [핵심] 개발자님의 기획을 반영한 3단계 맞춤형 스폰 로직
         let spawnThreshold = 0;
-        let allowComplexPatterns = false;
+        let patternMode = 0; // 0: 단일(1단계), 1: 복합(2단계), 2: 초고속 전용(3단계)
 
         if (level <= 3) {
-            // 🟢 1단계 (LV 1~3): 부스트 학습 구간 
-            // - 속도가 느림. 장애물이 매우 띄엄띄엄 나옴 (부스트 마음껏 사용 가능)
+            // 🟢 1단계: 부스트 학습 (여유로움)
             spawnThreshold = 130 + Math.random() * 50; 
-            allowComplexPatterns = false;
+            patternMode = 0;
         } else if (level <= 7) {
-            // 🟡 2단계 (LV 4~7): 패턴 대응 구간 
-            // - 속도 빠름. 장애물 간격이 매우 좁고 복합 패턴이 쏟아짐 (부스트 짧게 끊어 쓰기)
+            // 🟡 2단계: 패턴 대응 구간 (밀도 높음, 억까 있음)
             spawnThreshold = 65 + Math.random() * 35;
-            allowComplexPatterns = true;
+            patternMode = 1;
         } else {
             // 🔴 3단계 (LV 8~): 초고속 서바이벌 구간
-            // - 속도가 미친듯이 빠름. 장애물 간격이 다시 넓어짐 (순수 반사신경 요구)
-            spawnThreshold = 110 + Math.random() * 40; 
-            allowComplexPatterns = false; // 너무 빨라서 복합 패턴은 불합리하므로 단일 장애물만!
+            // 💡 [핵심 수정] 속도가 엄청 빠르므로 프레임 간격을 대폭 줄여 화면을 꽉 채웁니다!
+            spawnThreshold = 45 + Math.random() * 30; 
+            patternMode = 2; // 초고속 전용 패턴 활성화
         }
 
         if (obstacleTimer > spawnThreshold) {
-            obstacleTimer = 0; // 즉시 리셋
+            obstacleTimer = 0; 
 
-            if (allowComplexPatterns) {
+            if (patternMode === 1) {
+                // [기존 유지] 2단계 억까 패턴
                 const patternType = Math.random();
                 if (patternType < 0.25) { 
                     obstacles.push(new Obstacle('fire'));
                 } else if (patternType < 0.5) { 
                     obstacles.push(new Obstacle('eagle'));
-                } else if (patternType < 0.75) { // 이중 불꽃 (긴 점프)
+                } else if (patternType < 0.75) { // 좁은 이중 불꽃 (긴 점프 필요)
                     const fire1 = new Obstacle('fire');
                     const fire2 = new Obstacle('fire');
                     fire2.x = fire1.x + 140;
@@ -381,10 +379,27 @@ function handleObstacles() {
                     const fire2 = new Obstacle('fire');
                     fire2.x = fire1.x + 260;
                     obstacles.push(fire1, fire2);
-                    obstacleTimer = -20; // 패턴 길이 보정
+                    obstacleTimer = -20; 
+                }
+            } else if (patternMode === 2) {
+                // 💡 [신규 추가] 3단계 초고속 패턴
+                // 좁은 이중 불꽃(140px)은 속도가 너무 빠르면 절대 피할 수 없으므로 빼고,
+                // 리듬감 있게 계속 점프해야 하는 패턴으로 재구성합니다.
+                const patternType = Math.random();
+                if (patternType < 0.4) { 
+                    obstacles.push(new Obstacle('fire'));
+                } else if (patternType < 0.7) { 
+                    obstacles.push(new Obstacle('eagle'));
+                } else { 
+                    // 속도가 매우 빠르므로, 거리를 350px로 넉넉히 벌려준 쾌속 이중 점프 패턴!
+                    const fire1 = new Obstacle('fire');
+                    const fire2 = new Obstacle('fire');
+                    fire2.x = fire1.x + 350;
+                    obstacles.push(fire1, fire2);
+                    obstacleTimer = -30; // 연속 패턴이 끝난 후 잠깐의 숨고르기
                 }
             } else {
-                // 1단계, 3단계에서는 불합리한 억까 패턴 없이 단일 장애물만 나옵니다.
+                // 1단계 (단일 장애물)
                 obstacles.push(new Obstacle(Math.random() < 0.5 ? 'fire' : 'eagle'));
             }
         }
