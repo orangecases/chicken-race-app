@@ -213,11 +213,19 @@ class Dog {
         this.frame = 0; this.frameDelay = 5; this.targetX = this.initialX;
     }
     update() {
-        if (gameState !== STATE.PLAYING) { this.targetX = this.initialX; this.x += (this.targetX - this.x) * 0.05; }
-        else {
-            // 💡 [수정] 강아지가 화면에 치고 나오는 속도를 대폭 단축 (0.008 -> 0.04)
-            if (chicken.isBoosting) { this.targetX = 50; this.x += (this.targetX - this.x) * 0.04; }
-            else { this.targetX = this.initialX; this.x += (this.targetX - this.x) * 0.04; }
+        if (gameState !== STATE.PLAYING) {
+            this.targetX = this.initialX;
+            this.x += (this.targetX - this.x) * 0.05;
+        } else {
+            if (chicken.isBoosting) {
+                // 💡 [핵심 해결] 강아지의 최고 목표는 50이지만, 무조건 치킨보다 300px 뒤에 있도록 강제합니다!
+                this.targetX = Math.min(50, chicken.x - 300);
+                // 속도를 0.04로 빠르게 올려도 겹치지 않고 안전하게 쫓아옵니다.
+                this.x += (this.targetX - this.x) * 0.04;
+            } else {
+                this.targetX = this.initialX;
+                this.x += (this.targetX - this.x) * 0.04;
+            }
         }
         this.frame++;
     }
