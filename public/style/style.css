@@ -148,6 +148,30 @@ html, body small{font-size: 70%;}
     --btn-text-color: #5c5c5c; /* A light gray */
     --btn-text-color-pressed: rgba(0, 0, 0, 0.6);
 }
+.pixelbtn--accent  {
+    --btn-body-img: url(../assets/images/btn-coral-body.png);
+    --btn-edge-img: url(../assets/images/btn-coral-edge.png);
+    --btn-body-pressed-img: url(../assets/images/btn-coral-body_pressed.png);
+    --btn-edge-pressed-img: url(../assets/images/btn-coral-edge_pressed.png);
+    --btn-text-color: #5c5c5c; /* A light gray */
+    --btn-text-color-pressed: rgba(0, 0, 0, 0.6);
+}
+.pixelbtn--warning  {
+    --btn-body-img: url(../assets/images/btn-gold-body.png);
+    --btn-edge-img: url(../assets/images/btn-gold-edge.png);
+    --btn-body-pressed-img: url(../assets/images/btn-gold-body_pressed.png);
+    --btn-edge-pressed-img: url(../assets/images/btn-gold-edge_pressed.png);
+    --btn-text-color: #5c5c5c; /* A light gray */
+    --btn-text-color-pressed: rgba(0, 0, 0, 0.6);
+}
+.pixelbtn--safety {
+    --btn-body-img: url(../assets/images/btn-green-body.png);
+    --btn-edge-img: url(../assets/images/btn-green-edge.png);
+    --btn-body-pressed-img: url(../assets/images/btn-green-body_pressed.png);
+    --btn-edge-pressed-img: url(../assets/images/btn-green-edge_pressed.png);
+    --btn-text-color: #5c5c5c; /* A light gray */
+    --btn-text-color-pressed: rgba(0, 0, 0, 0.6);
+}
 
 /* =========================================
    1. 게임 영역 & UI 오버레이
