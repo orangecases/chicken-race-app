@@ -66,6 +66,7 @@ html, body small{font-size: 70%;}
     cursor: pointer;
     position: relative;
     width: 100%;
+    min-width: 6rem;
     max-width: 8rem;
     margin-inline: var(--pixelbtn-edge-width);
     height: 4rem;
@@ -80,6 +81,9 @@ html, body small{font-size: 70%;}
     background-size: 0.5rem 100%;
     background-repeat: repeat-x;
     background-position: center;
+}
+.pixelbtn .play-cost{
+    bottom: -0.5rem;
 }
 
 .pixelbtn::before,
@@ -161,7 +165,7 @@ html, body small{font-size: 70%;}
     --btn-edge-img: url(../assets/images/btn-gold-edge.png);
     --btn-body-pressed-img: url(../assets/images/btn-gold-body_pressed.png);
     --btn-edge-pressed-img: url(../assets/images/btn-gold-edge_pressed.png);
-    --btn-text-color: #522f02; /* A light gray */
+    --btn-text-color: #7d5105; /* A light gray */
     --btn-text-color-pressed: rgba(0, 0, 0, 0.6);
 }
 .pixelbtn--safety {
@@ -169,7 +173,7 @@ html, body small{font-size: 70%;}
     --btn-edge-img: url(../assets/images/btn-green-edge.png);
     --btn-body-pressed-img: url(../assets/images/btn-green-body_pressed.png);
     --btn-edge-pressed-img: url(../assets/images/btn-green-edge_pressed.png);
-    --btn-text-color: #415219; /* A light gray */
+    --btn-text-color: #173d10; /* A light gray */
     --btn-text-color-pressed: rgba(0, 0, 0, 0.6);
 }
 
@@ -323,7 +327,7 @@ html, body small{font-size: 70%;}
 }
 
 .game-overlay-screen .message {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     text-shadow: 0 0 2px black;    
 }
 .game-overlay-screen .time-message{
@@ -339,6 +343,10 @@ html, body small{font-size: 70%;}
     -webkit-tap-highlight-color: transparent;
     color: white;
     font-size: 0.875rem;
+}
+.game-overlay-screen .btn-group{
+    display: flex;
+    gap: 0.25rem;
 }
 
 #btn-restart {
