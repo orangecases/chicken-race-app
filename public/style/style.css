@@ -325,9 +325,14 @@ html, body small{font-size: 70%;}
     font-family: 'PixelFont', sans-serif;
     text-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
 }
+
 .game-overlay-screen h1 span{
-    padding-left: 1rem;
+    box-sizing: border-box;
+    display: inline-block;
+    width: 2.75rem;
+    padding-left: 0.5rem;
     font-family: inherit;
+    text-align: center;
 }
 
 .game-overlay-screen .message {
