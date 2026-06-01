@@ -1531,8 +1531,8 @@ function showContinueScreen() {
     const timerDisplay = document.getElementById('continue-timer-display');
     const btnYes = document.getElementById('btn-continue-yes');
     
-    // 코인이 부족하면 '계속' 버튼을 회색으로 만들고 클릭을 막음 (비용 2코인으로 설정)
-    const cost = 2; 
+    // 코인이 부족하면 '계속' 버튼을 회색으로 만들고 클릭을 막음 (비용 1코인으로 설정)
+    const cost = 1; 
     const currentCoins = currentUser ? currentUser.coins : guestCoins;
     
     // 버튼 내 비용 숫자 텍스트를 2로 업데이트
@@ -1574,7 +1574,7 @@ function proceedToGameOver() {
 }
 
 function resumeFromContinue() {
-    const cost = 2; // 이어하기 비용 2코인
+    const cost = 1; // 이어하기 비용 1코인
     const currentCoins = currentUser ? currentUser.coins : guestCoins;
     if (currentCoins < cost) return; // (안전장치) 코인 없으면 작동안함
 
