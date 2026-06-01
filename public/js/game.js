@@ -3796,6 +3796,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnExitFromPause) btnExitFromPause.onclick = handleHomeButtonClick;
     if (btnExitFromGameover) btnExitFromGameover.onclick = handleHomeButtonClick;
 
+    // [신규] 이어하기 화면 버튼 이벤트 연결
+    const btnContinueYes = document.getElementById('btn-continue-yes');
+    if (btnContinueYes) btnContinueYes.onclick = resumeFromContinue;
+
+    const btnContinueNo = document.getElementById('btn-continue-no');
+    if (btnContinueNo) btnContinueNo.onclick = proceedToGameOver;
+
+    const btnExitFromContinue = document.getElementById('btn-exit-from-continue');
+    if (btnExitFromContinue) btnExitFromContinue.onclick = handleHomeButtonClick;
+
     window.resetAdCount = resetAdCount; // [테스트용] 광고 시청횟수
     window.resetRoomData = resetRoomData;// [테스트용] 룸데이터 초기화(모집중)
     window.setCoins = setCoins; // [테스트용] 개발용 코인 설정 함수 전역 등록
