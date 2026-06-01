@@ -1555,13 +1555,13 @@ function showContinueScreen() {
     
     if (continueTimerId) clearInterval(continueTimerId);
     continueTimerId = setInterval(() => {
-        continueCountdown--;
-        timerDisplay.innerText = continueCountdown;
-        // 💡 카운트가 0 미만(-1)으로 떨어졌을 때만 게임 오버 처리
-        if (continueCountdown < 0) {
+        // 💡 1. 만약 이미 0초에 도달한 상태로 1초(대기)가 지났다면? -> 게임 오버!
+        if (continueCountdown <= 0) {
             proceedToGameOver(); 
-        } else {
-            // 0 이상일 때만 화면에 숫자를 업데이트 (0을 1초 동안 보여줌)
+        } 
+        // 💡 2. 아직 0초가 아니라면? -> 1을 빼고 화면에 그리기
+        else {
+            continueCountdown--;
             timerDisplay.innerText = continueCountdown;
         }
     }, 1000);
