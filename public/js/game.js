@@ -1557,8 +1557,12 @@ function showContinueScreen() {
     continueTimerId = setInterval(() => {
         continueCountdown--;
         timerDisplay.innerText = continueCountdown;
-        if (continueCountdown <= 0) {
-            proceedToGameOver(); // 0초 되면 얄짤없이 포기 처리
+        // 💡 카운트가 0 미만(-1)으로 떨어졌을 때만 게임 오버 처리
+        if (continueCountdown < 0) {
+            proceedToGameOver(); 
+        } else {
+            // 0 이상일 때만 화면에 숫자를 업데이트 (0을 1초 동안 보여줌)
+            timerDisplay.innerText = continueCountdown;
         }
     }, 1000);
 }
