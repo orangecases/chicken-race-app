@@ -251,11 +251,6 @@
             <div id="game-over-screen" class="game-overlay-screen hidden">
                 <p class="message" id="gov-message">남은 횟수 : 0/0</p>
                 <h1 id="gov-title">GAME OVER</h1>
-                <div class="btn-group">
-                    <button class="pixelbtn pixelbtn--safety">새로시작<span class="play-cost"><img src="assets/images/icon_coin.png"> - <strong>1</strong></span></button>
-                    <button class="pixelbtn pixelbtn--danger">계속<span class="play-cost"><img src="assets/images/icon_coin.png"> - <strong>1</strong></span></button>
-                </div>
-                <p class="message">남은 재도전 횟수 : <strong>2</strong><small>회</small></p>
                 <button id="btn-restart">
                     <span class="play-cost"><img src="assets/images/icon_coin.png"> - <strong>1</strong></span>
                 </button>
@@ -263,6 +258,16 @@
                 <button id="btn-exit-from-gameover" class="btn-exit-to-home">HOME</button>
                 <label class="coin-stat"><img src="assets/images/icon_coin.png" /> X <strong>50</strong></label>
                 <p class="time-message">30초 후 자동 시작</p>
+            </div>
+
+            <div id="game-continue-screen" class="game-overlay-screen hidden">
+                <h1 id="continue-title">CONTINUE<span id="continue-timer-display">0</span></h1>
+                <div class="btn-group">
+                    <button id="btn-continue-no" class="pixelbtn pixelbtn--neutral">취소</button>
+                    <button id="btn-continue-yes" class="pixelbtn pixelbtn--danger">계속<span class="play-cost"><img src="assets/images/icon_coin.png"> - <strong>1</strong></span></button>
+                </div>
+                <button id="btn-exit-from-continue" class="btn-exit-to-home">HOME</button>
+                <label class="coin-stat"><img src="assets/images/icon_coin.png" /> X <strong>50</strong></label>
             </div>
 
             <canvas id="gameCanvas"></canvas>

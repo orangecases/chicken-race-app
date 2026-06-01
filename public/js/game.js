@@ -44,6 +44,8 @@ let isLoggedIn = false; // [신규] 로그인 상태
 let currentUser = null; // [신규] 로그인한 사용자 정보
 let unsubscribeUserData = null; // [신규] 유저 데이터 리스너 해제 함수
 let guestCoins = parseInt(localStorage.getItem('chickenRunGuestCoins') || '10'); // [FIX] 삭제되었던 게스트 코인 변수 복원
+let hasRevived = false; // [신규] 1회 부활 여부 체크
+let continueTimerId = null; // [신규] 카운트다운 타이머 아이디
 let multiGamePlayers = []; // [신규] 멀티플레이 참여자 목록
 let unsubscribeParticipantsListener = null; // [신규] 멀티플레이 참가자 실시간 리스너
 let autoActionTimer = null; // [신규] 자동 액션 타이머
@@ -155,6 +157,7 @@ const chicken = {
     width: 128, height: 128, x: 100, y: FLOOR_Y, dy: 0, isJumping: false, frameDelay: 8, isBoosting: false, targetX: 100,
     boostProgress: 0, // [신규] 부스트 게이지 (0~100)
     crashFrame: 0,
+    isInvincible: false, // 💡 [추가] 무적 상태 플래그
     update() {
         if (gameState === STATE.PLAYING) {
             if (this.isJumping) {
@@ -181,6 +184,8 @@ const chicken = {
         }
     },
     draw() {
+        // 💡 [추가] 무적 상태일 때 0.15초 간격으로 깜빡이는 효과 (그리기를 건너뜀)
+        if (this.isInvincible && Math.floor(Date.now() / 150) % 2 === 0) return;
         let sprite;
         if (gameState === STATE.PLAYING) {
             sprite = (Math.floor(gameFrame / this.frameDelay) % 2 === 0) ? images.chickenRun1 : images.chickenRun2;
@@ -406,7 +411,7 @@ function handleObstacles() {
     }
     obstacles.forEach(obs => {
         obs.update(); obs.draw();
-        if (gameState === STATE.PLAYING) {
+        if (gameState === STATE.PLAYING && !chicken.isInvincible) {
             const pX = chicken.x + 30, pY = chicken.y + 30, pW = chicken.width - 60, pH = chicken.height - 40;
             const oX = obs.x + obs.hitbox.xOffset, oY = obs.y + obs.hitbox.yOffset, oW = obs.hitbox.width, oH = obs.hitbox.height;
             if (pX < oX + oW && pX + pW > oX && pY < oY + oH && pY + pH > oY) {
@@ -593,6 +598,8 @@ function resetGame() {
     }
 
     // 🚨 공통 초기화 항목 (여기서 중복으로 레벨을 덮어씌우던 코드를 삭제했습니다!)
+    hasRevived = false;
+    chicken.isInvincible = false;
     gameFrame = 0;
     score = 0;
     isJumpPressed = false;
@@ -993,28 +1000,32 @@ function gameLoop() {
         if (gameSpeed < 0.1) {
             gameSpeed = 0;
             if (chicken.y >= FLOOR_Y) {
-                gameState = STATE.GAMEOVER;
-                // [신규] 멀티플레이 점수 반영 로직 (게임 시도 종료 시점에 한 번만 실행)
-                if (currentGameMode === 'multi' && currentRoom && currentUser) {
-                    const myId = currentUser.id;
-                    const myPlayer = multiGamePlayers.find(p => p.id === myId);
-                    if (myPlayer) {
-                        if (currentRoom.rankType === 'total') {
-                            if (isNaN(score)) score = 0;
-                            myPlayer.totalScore = (myPlayer.totalScore || 0) + score;
-                        } else {
-                            myPlayer.bestScore = Math.max((myPlayer.bestScore || 0), score);
+                // 💡 [신규 추가] 싱글플레이 1회 부활 찬스 분기점!
+                if (currentGameMode === 'single' && !hasRevived) {
+                    showContinueScreen(); // 카운트다운 화면 호출
+                } else {
+                    gameState = STATE.GAMEOVER;
+                    // [신규] 멀티플레이 점수 반영 로직 (게임 시도 종료 시점에 한 번만 실행)
+                    if (currentGameMode === 'multi' && currentRoom && currentUser) {
+                        const myId = currentUser.id;
+                        const myPlayer = multiGamePlayers.find(p => p.id === myId);
+                        if (myPlayer) {
+                            if (currentRoom.rankType === 'total') {
+                                if (isNaN(score)) score = 0;
+                                myPlayer.totalScore = (myPlayer.totalScore || 0) + score;
+                            } else {
+                                myPlayer.bestScore = Math.max((myPlayer.bestScore || 0), score);
+                            }
+                            myPlayer.score = 0; // 현재 판 점수 초기화
+                            score = 0;          // 🚨 [여기에 추가!] 원본 글로벌 score도 반드시 0으로 비워줍니다!
                         }
-                        myPlayer.score = 0; // 현재 판 점수 초기화
-                        score = 0;          // 🚨 [여기에 추가!] 원본 글로벌 score도 반드시 0으로 비워줍니다!
+                        if (currentUser && currentUser.joinedRooms[currentRoom.id]) {
+                            currentUser.joinedRooms[currentRoom.id].usedAttempts++;
+                            saveUserDataToFirestore(); // [FIX] 시도 횟수 변경 시 서버에 즉시 저장
+                        }
                     }
-                    if (currentUser && currentUser.joinedRooms[currentRoom.id]) {
-                        currentUser.joinedRooms[currentRoom.id].usedAttempts++;
-                        saveUserDataToFirestore(); // [FIX] 시도 횟수 변경 시 서버에 즉시 저장
-                    }
+                    handleGameOverUI();
                 }
-
-                handleGameOverUI();
             }
         }
     }
@@ -1505,6 +1516,96 @@ function togglePause() {
             startAutoActionTimer(30, 'start', '#game-pause-screen .time-message');
         }
     }
+}
+
+/**
+// 💡 [신규] 이어하기(부활) 관련 핵심 로직
+ */
+
+function showContinueScreen() {
+    gameState = STATE.GAMEOVER; // 화면 일시정지 효과
+    stopBGM(); // 카운트다운 압박을 위해 BGM 정지
+    setControlsVisibility(false);
+    
+    const continueScreen = document.getElementById('game-continue-screen');
+    const timerDisplay = document.getElementById('continue-timer-display');
+    const btnYes = document.getElementById('btn-continue-yes');
+    
+    // 코인이 부족하면 '계속' 버튼을 회색으로 만들고 클릭을 막음 (비용 2코인으로 설정)
+    const cost = 2; 
+    const currentCoins = currentUser ? currentUser.coins : guestCoins;
+    
+    // 버튼 내 비용 숫자 텍스트를 2로 업데이트
+    const costText = btnYes.querySelector('.play-cost strong');
+    if(costText) costText.innerText = cost;
+
+    if (currentCoins < cost) {
+        btnYes.style.opacity = '0.5';
+        btnYes.style.pointerEvents = 'none'; 
+    } else {
+        btnYes.style.opacity = '1';
+        btnYes.style.pointerEvents = 'auto';
+    }
+
+    continueScreen.classList.remove('hidden');
+    
+    // 5초 카운트다운 시작
+    let continueCountdown = 5;
+    timerDisplay.innerText = continueCountdown;
+    
+    if (continueTimerId) clearInterval(continueTimerId);
+    continueTimerId = setInterval(() => {
+        continueCountdown--;
+        timerDisplay.innerText = continueCountdown;
+        if (continueCountdown <= 0) {
+            proceedToGameOver(); // 0초 되면 얄짤없이 포기 처리
+        }
+    }, 1000);
+}
+
+function proceedToGameOver() {
+    if (continueTimerId) clearInterval(continueTimerId);
+    document.getElementById('game-continue-screen').classList.add('hidden');
+    handleGameOverUI(); // 진짜 게임 오버 처리 (서버 저장 등)
+}
+
+function resumeFromContinue() {
+    const cost = 2; // 이어하기 비용 2코인
+    const currentCoins = currentUser ? currentUser.coins : guestCoins;
+    if (currentCoins < cost) return; // (안전장치) 코인 없으면 작동안함
+
+    if (continueTimerId) clearInterval(continueTimerId);
+    
+    // 1. 코인 차감 로직
+    if (currentUser) {
+        currentUser.coins -= cost;
+        syncCoinsToServer(currentUser.coins);
+    } else {
+        guestCoins -= cost;
+        localStorage.setItem('chickenRunGuestCoins', guestCoins);
+    }
+    updateCoinUI();
+
+    // 2. 화면 가리기 및 버튼 다시 보이기
+    document.getElementById('game-continue-screen').classList.add('hidden');
+    setControlsVisibility(true);
+
+    // 3. 닭 부활 및 무적 상태 돌입!
+    hasRevived = true; // 이번 판 부활권 사용 완료 마킹
+    gameState = STATE.PLAYING;
+    gameSpeed = baseGameSpeed; // 죽었을 때 0이 된 속도를 복구
+    chicken.y = FLOOR_Y;
+    chicken.dy = 0;
+    chicken.isJumping = false;
+    chicken.isInvincible = true; // 무적 On!
+    chicken.crashFrame = 0; // 죽은 애니메이션 프레임 리셋
+    
+    playSound('bgm');
+
+    // 3초 뒤에 무적(깜빡임) 해제
+    setTimeout(() => {
+        chicken.isInvincible = false;
+    }, 3000);
 }
 
 /**

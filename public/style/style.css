@@ -346,7 +346,7 @@ html, body small{font-size: 70%;}
 }
 .game-overlay-screen .btn-group{
     display: flex;
-    gap: 0.25rem;
+    gap: 2%;
 }
 
 #btn-restart {
