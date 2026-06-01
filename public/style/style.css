@@ -325,6 +325,10 @@ html, body small{font-size: 70%;}
     font-family: 'PixelFont', sans-serif;
     text-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
 }
+.game-overlay-screen h1 span{
+    padding-left: 1rem;
+    font-family: inherit;
+}
 
 .game-overlay-screen .message {
     font-size: 0.85rem;
