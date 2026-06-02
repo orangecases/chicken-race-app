@@ -3031,9 +3031,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMyRecordList(); // 초기에는 "기록 없음" 상태로 렌더링됩니다.
     renderTop100List();
 
-    // 🚨 앱이 켜지자마자 대기하지 않고 즉시 레이스룸 목록을 서버에서 불러옵니다!
-    fetchRaceRooms(false);
-
     const btnLoadMore = document.getElementById('btn-load-more');
     if (btnLoadMore) {
         btnLoadMore.onclick = () => {
@@ -3981,6 +3978,10 @@ firebase.auth().onAuthStateChanged((user) => {
 
         // 로그아웃 시 UI 초기화 (필요시)
         document.getElementById('scene-user-profile').classList.add('hidden');
+        
+        // 💡 [신규 추가] 로그아웃(게스트) 상태가 최종 확정되었을 때 안전하게 방 목록을 호출합니다.
+        roomFetchPromise = null;
+        fetchRaceRooms(false);
     }
 });
 
