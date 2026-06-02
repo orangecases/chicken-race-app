@@ -1606,10 +1606,10 @@ function resumeFromContinue() {
     
     playSound('bgm');
 
-    // 3초 뒤에 무적(깜빡임) 해제
+    // 5초 뒤에 무적(깜빡임) 해제
     setTimeout(() => {
         chicken.isInvincible = false;
-    }, 7000);
+    }, 5000);
 }
 
 /**
