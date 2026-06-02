@@ -185,7 +185,7 @@ const chicken = {
     },
     draw() {
         // 💡 [추가] 무적 상태일 때 0.15초 간격으로 깜빡이는 효과 (그리기를 건너뜀)
-        if (this.isInvincible && Math.floor(Date.now() / 150) % 2 === 0) return;
+        if (this.isInvincible && Math.floor(Date.now() / 80) % 2 === 0) return;
         let sprite;
         if (gameState === STATE.PLAYING) {
             sprite = (Math.floor(gameFrame / this.frameDelay) % 2 === 0) ? images.chickenRun1 : images.chickenRun2;
@@ -1609,7 +1609,7 @@ function resumeFromContinue() {
     // 3초 뒤에 무적(깜빡임) 해제
     setTimeout(() => {
         chicken.isInvincible = false;
-    }, 3000);
+    }, 7000);
 }
 
 /**
