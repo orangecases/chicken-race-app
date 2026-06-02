@@ -1314,9 +1314,6 @@ function fetchRaceRooms(loadMore = false) {
             currentRoomLimit = ROOMS_PER_PAGE;
         }
 
-        const loader = document.getElementById('race-room-loader');
-        if (loader) loader.classList.remove('hidden');
-
         if (unsubscribeRoomListener) {
             unsubscribeRoomListener();
             unsubscribeRoomListener = null;
