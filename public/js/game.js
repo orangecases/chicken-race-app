@@ -1164,12 +1164,18 @@ function renderMyRecordList(append = false) {
 }
 
 /**
- * [신규] 'Top 100' 탭의 더미 데이터 목록을 그립니다.
+ * [신규] 'Top 100' 탭의 목록을 그립니다.
  */
 function renderTop100List() {
     const listEl = document.querySelector('#content-top-100 .score-list');
     if (!listEl) return;
     listEl.innerHTML = '';
+
+    // 💡 [신규 추가] 데이터를 아직 못 가져와서 배열이 비어있을 때 '로딩 중' 표시!
+    if (top100Scores.length === 0) {
+        listEl.innerHTML = '<li><div class="info" style="text-align:center; width:100%;"><p>랭킹 데이터를 불러오는 중입니다...</p></div></li>';
+        return;
+    }
 
     top100Scores.forEach(entry => {
         const rank = entry.rank;
@@ -3228,7 +3234,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     }
-    updateCoinUI(); 
 
     const sceneCreateRoom = document.getElementById('scene-create-room');
     const btnCreateOpen = document.getElementById('btn-create-room-open');
