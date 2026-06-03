@@ -2048,7 +2048,7 @@ function updateLoadMoreButtons() {
     // 1. 레이스룸 탭 제어
     if (loader) {
         // 모든 방을 불러왔다면 로더(버튼 영역)를 완전히 숨깁니다.
-        if (allRoomsLoaded) {
+        if (allRoomsLoaded || raceRooms.length === 0) {
             loader.classList.add('hidden');
         } else {
             loader.classList.remove('hidden');
