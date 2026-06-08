@@ -578,6 +578,10 @@ function startAutoActionTimer(duration, type, selector) {
 
 function resetGame() {
     clearAutoActionTimer(); // 타이머 초기화
+    if (continueTimerId) {
+        clearInterval(continueTimerId);
+        continueTimerId = null;
+    }
     gameState = STATE.IDLE; // 초기 상태를 IDLE(대기)로 설정
     stopBGM();
 
@@ -612,6 +616,7 @@ function resetGame() {
     document.getElementById('game-over-screen').classList.add('hidden');
     document.getElementById('game-start-screen').classList.add('hidden');
     document.getElementById('game-pause-screen').classList.add('hidden');
+    document.getElementById('game-continue-screen').classList.add('hidden');
 
     const btnJump = document.getElementById('btn-jump');
     if (btnJump) btnJump.classList.remove('pressed');
@@ -1771,6 +1776,14 @@ async function performServerExit(roomId, isFullExit) {
  */
 async function exitToLobby(isFullExit = false) { 
     sessionStorage.removeItem('activeRoomId');
+
+    // 💡 홈 버튼으로 나갈 때, 이어하기 카운트다운을 즉시 종료하고 화면을 닫습니다.
+    if (continueTimerId) {
+        clearInterval(continueTimerId);
+        continueTimerId = null;
+    }
+    const continueScreen = document.getElementById('game-continue-screen');
+    if (continueScreen) continueScreen.classList.add('hidden');
 
     if (unsubscribeParticipantsListener) {
         unsubscribeParticipantsListener();
