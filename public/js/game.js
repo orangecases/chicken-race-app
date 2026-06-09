@@ -2748,15 +2748,26 @@ function resetRoomData() {
  * 구글 로그인 함수
  */
 function loginWithGoogle() {
-    if (window.AndroidBridge || (window.webkit && window.webkit.messageHandlers.requestGoogleLogin)) {
-        window.invokeNativeApp('requestGoogleLogin');
-    } else {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.addScope('profile');
-        provider.addScope('email');
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
 
+    // 1. 추후 엑스코드(Swift)에서 네이티브 로그인을 구현했을 때를 위한 준비
+    if (window.webkit && window.webkit.messageHandlers.requestGoogleLogin) {
+        window.invokeNativeApp('requestGoogleLogin');
+    } 
+    // 2. 안드로이드 앱인 경우
+    else if (window.AndroidBridge) {
+        window.invokeNativeApp('requestGoogleLogin');
+    }
+    // 3. 💡 [핵심] iOS 앱(웹뷰)인 경우: 팝업 차단을 피하기 위해 '리다이렉트' 사용!
+    else if (window.webkit && window.webkit.messageHandlers) {
+        sessionStorage.setItem('pendingAppleLogin', 'true'); // 로딩창 표식 재활용
+        firebase.auth().signInWithRedirect(provider);
+    } 
+    // 4. 일반 인터넷 브라우저 (PC 등): 기존처럼 팝업 사용
+    else {
         firebase.auth().signInWithPopup(provider).then(() => {
-            // ✅ 데이터가 준비될 때까지 기다렸다가 띄움
             waitForUserAndShowProfile();
         }).catch((error) => {
             console.error("❌ 로그인 팝업 실패:", error.message);
@@ -2777,13 +2788,15 @@ async function loginWithApple() {
     provider.addScope('name');
 
     try {
-        if (window.AndroidBridge) {
-            // 앱 환경: 표식만 남기고 Redirect
+        const isIOSWebView = window.webkit && window.webkit.messageHandlers;
+
+        // 💡 [핵심] 안드로이드 앱 또는 iOS 앱(웹뷰)에서는 팝업 대신 '리다이렉트' 사용!
+        if (window.AndroidBridge || isIOSWebView) {
             sessionStorage.setItem('pendingAppleLogin', 'true');
             await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             firebase.auth().signInWithRedirect(provider);
         } else {
-            // 웹 환경: 팝업
+            // 웹 브라우저에서는 기존처럼 팝업 사용
             await firebase.auth().signInWithPopup(provider);
             waitForUserAndShowProfile();
         }
