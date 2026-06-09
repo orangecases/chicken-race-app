@@ -2752,21 +2752,12 @@ function loginWithGoogle() {
     provider.addScope('profile');
     provider.addScope('email');
 
-    // 안드로이드 앱인 경우 네이티브 호출
     if (window.AndroidBridge) {
         window.invokeNativeApp('requestGoogleLogin');
-    } 
-    // iOS 앱 및 일반 웹 브라우저: 모두 '팝업' 방식 사용!
-    else {
-        firebase.auth().signInWithPopup(provider).then(() => {
-            waitForUserAndShowProfile();
-        }).catch((error) => {
-            console.error("❌ 로그인 팝업 실패:", error.message);
-            if (error.code !== 'auth/popup-closed-by-user') {
-                alert("로그인 중 오류가 발생했습니다: " + error.message);
-            }
-            if (window.resetLoginButtons) window.resetLoginButtons();
-        });
+    } else {
+        // 💡 팝업을 버리고, 다시 안정적인 리다이렉트 방식으로 통일!
+        sessionStorage.setItem('pendingAppleLogin', 'true');
+        firebase.auth().signInWithRedirect(provider);
     }
 }
 
@@ -2779,15 +2770,10 @@ async function loginWithApple() {
     provider.addScope('name');
 
     try {
-        if (window.AndroidBridge) {
-            sessionStorage.setItem('pendingAppleLogin', 'true');
-            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            firebase.auth().signInWithRedirect(provider);
-        } else {
-            // iOS 앱 및 일반 웹 브라우저: 모두 '팝업' 방식 사용!
-            await firebase.auth().signInWithPopup(provider);
-            waitForUserAndShowProfile();
-        }
+        // 💡 여기도 리다이렉트로 통일!
+        sessionStorage.setItem('pendingAppleLogin', 'true');
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        firebase.auth().signInWithRedirect(provider);
     } catch (error) {
         alert("애플 로그인 오류: " + error.message);
         if (window.resetLoginButtons) window.resetLoginButtons();
