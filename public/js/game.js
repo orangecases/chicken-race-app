@@ -2752,20 +2752,11 @@ function loginWithGoogle() {
     provider.addScope('profile');
     provider.addScope('email');
 
-    // 1. 추후 엑스코드(Swift)에서 네이티브 로그인을 구현했을 때를 위한 준비
-    if (window.webkit && window.webkit.messageHandlers.requestGoogleLogin) {
+    // 안드로이드 앱인 경우 네이티브 호출
+    if (window.AndroidBridge) {
         window.invokeNativeApp('requestGoogleLogin');
     } 
-    // 2. 안드로이드 앱인 경우
-    else if (window.AndroidBridge) {
-        window.invokeNativeApp('requestGoogleLogin');
-    }
-    // 3. 💡 [핵심] iOS 앱(웹뷰)인 경우: 팝업 차단을 피하기 위해 '리다이렉트' 사용!
-    else if (window.webkit && window.webkit.messageHandlers) {
-        sessionStorage.setItem('pendingAppleLogin', 'true'); // 로딩창 표식 재활용
-        firebase.auth().signInWithRedirect(provider);
-    } 
-    // 4. 일반 인터넷 브라우저 (PC 등): 기존처럼 팝업 사용
+    // iOS 앱 및 일반 웹 브라우저: 모두 '팝업' 방식 사용!
     else {
         firebase.auth().signInWithPopup(provider).then(() => {
             waitForUserAndShowProfile();
@@ -2780,7 +2771,7 @@ function loginWithGoogle() {
 }
 
 /**
- * 애플 로그인 - 웹/앱 분기 처리
+ * 애플 로그인
  */
 async function loginWithApple() {
     const provider = new firebase.auth.OAuthProvider('apple.com');
@@ -2788,15 +2779,12 @@ async function loginWithApple() {
     provider.addScope('name');
 
     try {
-        const isIOSWebView = window.webkit && window.webkit.messageHandlers;
-
-        // 💡 [핵심] 안드로이드 앱 또는 iOS 앱(웹뷰)에서는 팝업 대신 '리다이렉트' 사용!
-        if (window.AndroidBridge || isIOSWebView) {
+        if (window.AndroidBridge) {
             sessionStorage.setItem('pendingAppleLogin', 'true');
             await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             firebase.auth().signInWithRedirect(provider);
         } else {
-            // 웹 브라우저에서는 기존처럼 팝업 사용
+            // iOS 앱 및 일반 웹 브라우저: 모두 '팝업' 방식 사용!
             await firebase.auth().signInWithPopup(provider);
             waitForUserAndShowProfile();
         }
