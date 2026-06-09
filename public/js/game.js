@@ -2755,8 +2755,8 @@ function loginWithGoogle() {
     if (window.AndroidBridge) {
         window.invokeNativeApp('requestGoogleLogin');
     } else {
-        // 💡 팝업을 버리고, 다시 안정적인 리다이렉트 방식으로 통일!
-        sessionStorage.setItem('pendingAppleLogin', 'true');
+        // 💡 'google'이라고 명시해서 저장합니다.
+        sessionStorage.setItem('pendingLoginProvider', 'google'); 
         firebase.auth().signInWithRedirect(provider);
     }
 }
@@ -2770,8 +2770,8 @@ async function loginWithApple() {
     provider.addScope('name');
 
     try {
-        // 💡 여기도 리다이렉트로 통일!
-        sessionStorage.setItem('pendingAppleLogin', 'true');
+        // 💡 'apple'이라고 명시해서 저장합니다.
+        sessionStorage.setItem('pendingLoginProvider', 'apple');
         await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         firebase.auth().signInWithRedirect(provider);
     } catch (error) {
@@ -2971,43 +2971,19 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ✅ 앱으로 돌아왔을 때: 기존 로그인 모달은 띄우지 않고, 작고 깔끔한 로딩창만 중앙에 띄웁니다.
-    if (sessionStorage.getItem('pendingAppleLogin') === 'true') {
-        const lightLoader = document.createElement('div');
-        lightLoader.id = 'light-auth-loader';
-        // 배경을 아주 살짝만 어둡게(0.2) 하여 답답함을 없앱니다.
-        lightLoader.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.2); z-index:9999; display:flex; justify-content:center; align-items:center;";
-        lightLoader.innerHTML = `
-            <div style="padding: 20px 30px; background: white; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                <div style="margin: 0 auto 15px auto; width:30px; height:30px; border:4px solid #f3f3f3; border-top:4px solid #ffd02d; border-radius:50%; animation:btn-spin 1s linear infinite;"></div>
-                <p style="margin:0; color:#333; font-size:1rem; font-weight:bold; font-family:'Noto Sans KR', sans-serif;">로그인 확인 중...</p>
-            </div>
-        `;
-        document.body.appendChild(lightLoader);
-    }
-
     // 💡 페이지 로드 시 로그인 결과 확인
     firebase.auth().getRedirectResult()
         .then((result) => {
-            sessionStorage.removeItem('pendingAppleLogin'); // 표식 제거
+            sessionStorage.removeItem('pendingLoginProvider'); // 메모장 지우기
             if (result.user) {
-                console.log("🍎 애플 로그인 성공!");
-                // 로그인 확인 창이 있다면 제거
-                const loader = document.getElementById('light-auth-loader');
-                if (loader) loader.remove();
-
+                console.log("✅ 리다이렉트 로그인 성공!");
                 waitForUserAndShowProfile();
             } else {
-                // 로그인을 뒤로가기로 취소하고 돌아온 경우
-                const loader = document.getElementById('light-auth-loader');
-                if (loader) loader.remove();
                 if (window.resetLoginButtons) window.resetLoginButtons();
             }
         }).catch((error) => {
             console.error("❌ 로그인 처리 에러:", error.message);
-            sessionStorage.removeItem('pendingAppleLogin');
-            const loader = document.getElementById('light-auth-loader');
-            if (loader) loader.remove();
+            sessionStorage.removeItem('pendingLoginProvider');
             if (window.resetLoginButtons) window.resetLoginButtons();
         });
 
@@ -3458,6 +3434,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         gBtn.onclick = () => startTransition('google');
         aBtn.onclick = () => startTransition('apple');
+
+        // ⭐️ [여기에 추가!] 새로고침 되어 돌아왔을 때 메모장을 보고 버튼 스피너를 다시 돌립니다.
+        const pendingProvider = sessionStorage.getItem('pendingLoginProvider');
+        if (pendingProvider) {
+            const sceneAuth = document.getElementById('scene-auth');
+            if (sceneAuth) sceneAuth.classList.remove('hidden'); // 로그인 모달 띄우기
+            window.setButtonLoadingUI(pendingProvider); // 해당 버튼 스피너 작동!
+        }
     })();
 
     if (btnCreateOpen) {
