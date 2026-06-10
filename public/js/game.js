@@ -578,6 +578,7 @@ function startAutoActionTimer(duration, type, selector) {
 
 function resetGame() {
     clearAutoActionTimer(); // 타이머 초기화
+    lastFrameTime = 0;
     if (continueTimerId) {
         clearInterval(continueTimerId);
         continueTimerId = null;
@@ -930,7 +931,28 @@ function handleMultiplayerTick() {
     }
 }
 
-function gameLoop() {
+// 💡 [신규 추가] 60 FPS 고정을 위한 타이머 변수
+let lastFrameTime = 0;
+const TARGET_FPS = 60;
+const FRAME_INTERVAL = 1000 / TARGET_FPS; // 약 16.66ms
+
+function gameLoop(timestamp) {
+    // 1. 모니터 주사율에 맞춰 무한 반복을 예약합니다. (맨 위에 한 번만 배치)
+    gameLoopId = requestAnimationFrame(gameLoop);
+
+    // 2. 최초 실행 시 timestamp가 없으면 현재 시간을 강제로 넣어줍니다.
+    if (!timestamp) timestamp = performance.now();
+    if (!lastFrameTime) lastFrameTime = timestamp;
+
+    // 3. 이전 프레임에서부터 지나간 시간(경과 시간)을 계산합니다.
+    const deltaTime = timestamp - lastFrameTime;
+
+    // 4. 🚨 [핵심] 16.66ms(60FPS 기준)가 아직 안 지났다면 이번 턴의 그리기는 무시(return)합니다!
+    if (deltaTime < FRAME_INTERVAL) return;
+
+    // 5. 다음 프레임 계산을 위해 마지막 실행 시간을 갱신합니다. (초과된 시간 오차 보정)
+    lastFrameTime = timestamp - (deltaTime % FRAME_INTERVAL);
+
     // [신규] IDLE 상태: 게임 시작 전 대기 상태 (봇 시뮬레이션은 계속 수행)
     if (gameState === STATE.IDLE) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -939,9 +961,7 @@ function gameLoop() {
 
         // [핵심] 대기 상태에서도 멀티플레이 로직(봇 점수 계산 등)은 계속 실행되어야 함
         handleMultiplayerTick();
-
-        gameLoopId = requestAnimationFrame(gameLoop);
-        return;
+        return; 
     }
 
     if (gameState === STATE.PLAYING) {
@@ -957,8 +977,8 @@ function gameLoop() {
 
         // 3. 난이도 조절: 시간에 따라 게임 속도 증가 (프레임 기준)
         if (gameFrame >= nextLevelFrameThreshold) {
-            baseGameSpeed += 1.0;           // 💡 [수정] 속도 증가폭 상향 (0.8 -> 1.0)
-            nextLevelFrameThreshold += 400; // 💡 [수정] 600프레임에서 400프레임(약 6.5초)마다 폭풍 레벨업!
+            baseGameSpeed += 1.0;           
+            nextLevelFrameThreshold += 400; 
             level++;
             const levelEl = document.querySelector('.hud-level');
             if (levelEl) levelEl.innerText = 'LV.' + level;
@@ -967,7 +987,6 @@ function gameLoop() {
         // 4. HUD 점수판 업데이트
         const scoreEl = document.querySelector('.hud-score');
         if (scoreEl) {
-            // 부스트 단계에 따른 색상 클래스 적용
             scoreEl.classList.remove('green', 'yellow', 'orange', 'red');
             if (chicken.boostProgress >= 100) scoreEl.classList.add('red');
             else if (chicken.boostProgress >= 70) scoreEl.classList.add('orange');
@@ -975,14 +994,11 @@ function gameLoop() {
             else if (chicken.boostProgress >= 10) scoreEl.classList.add('green');
 
             let displayVal = Math.floor(score);
-            // [수정] 합산 모드일 경우 누적 점수 포함하여 표시
             if (currentGameMode === 'multi' && currentRoom && currentRoom.rankType === 'total') {
                 const myId = currentUser ? currentUser.id : 'me';
                 const myPlayer = multiGamePlayers.find(p => p.id === myId);
                 if (myPlayer) displayVal += Math.floor(myPlayer.totalScore);
             }
-
-            // [수정] 구조화된 HUD 업데이트
             scoreEl.querySelector('.score-val').innerText = displayVal.toLocaleString();
         }
         const myRankingScoreEl = document.getElementById('my-ranking-score');
@@ -993,11 +1009,11 @@ function gameLoop() {
 
         // 부스트 및 기본 속도 조절
         if (chicken.isBoosting) {
-            if (gameSpeed < baseGameSpeed + 5) gameSpeed += 0.2; // [수정] 부스트 가속도 및 최대 속도 감소
+            if (gameSpeed < baseGameSpeed + 5) gameSpeed += 0.2; 
             speedMultiplier = 2;
         } else {
-            if (gameSpeed > baseGameSpeed) gameSpeed -= 0.2; // 부스트 해제 시 기본 속도로 서서히 복귀
-            else gameSpeed = baseGameSpeed; // 속도가 기본보다 낮아지지 않도록 보정
+            if (gameSpeed > baseGameSpeed) gameSpeed -= 0.2; 
+            else gameSpeed = baseGameSpeed; 
             speedMultiplier = 1;
         }
     } else if (gameState === STATE.CRASHED) {
@@ -1005,12 +1021,10 @@ function gameLoop() {
         if (gameSpeed < 0.1) {
             gameSpeed = 0;
             if (chicken.y >= FLOOR_Y) {
-                // 💡 [신규 추가] 싱글플레이 1회 부활 찬스 분기점!
                 if (currentGameMode === 'single' && !hasRevived) {
-                    showContinueScreen(); // 카운트다운 화면 호출
+                    showContinueScreen(); 
                 } else {
                     gameState = STATE.GAMEOVER;
-                    // [신규] 멀티플레이 점수 반영 로직 (게임 시도 종료 시점에 한 번만 실행)
                     if (currentGameMode === 'multi' && currentRoom && currentUser) {
                         const myId = currentUser.id;
                         const myPlayer = multiGamePlayers.find(p => p.id === myId);
@@ -1021,12 +1035,12 @@ function gameLoop() {
                             } else {
                                 myPlayer.bestScore = Math.max((myPlayer.bestScore || 0), score);
                             }
-                            myPlayer.score = 0; // 현재 판 점수 초기화
-                            score = 0;          // 🚨 [여기에 추가!] 원본 글로벌 score도 반드시 0으로 비워줍니다!
+                            myPlayer.score = 0; 
+                            score = 0;          
                         }
                         if (currentUser && currentUser.joinedRooms[currentRoom.id]) {
                             currentUser.joinedRooms[currentRoom.id].usedAttempts++;
-                            saveUserDataToFirestore(); // [FIX] 시도 횟수 변경 시 서버에 즉시 저장
+                            saveUserDataToFirestore(); 
                         }
                     }
                     handleGameOverUI();
@@ -1043,11 +1057,9 @@ function gameLoop() {
     dog.update(); dog.draw();
     handleObstacles(); chicken.update(); chicken.draw();
     feathers.forEach(f => { f.update(); f.draw(); });
-    feathers = feathers.filter(f => f.opacity > 0); // 사라진 깃털 제거
+    feathers = feathers.filter(f => f.opacity > 0); 
 
     gameFrame++;
-
-    gameLoopId = requestAnimationFrame(gameLoop);
 }
 
 // [5. UI 렌더링 및 장면 제어]
@@ -1507,6 +1519,7 @@ function togglePause() {
         gameState = STATE.PLAYING;
         scenePauseMenu.classList.add('hidden');
         btnPauseToggle.classList.remove('paused');
+        lastFrameTime = 0;
         gameLoopId = requestAnimationFrame(gameLoop); 
     } else {
         pauseBGM();
