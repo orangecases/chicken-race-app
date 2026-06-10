@@ -1790,6 +1790,18 @@ async function performServerExit(roomId, isFullExit) {
 async function exitToLobby(isFullExit = false) { 
     sessionStorage.removeItem('activeRoomId');
 
+    // 💡 [핵심 수정] 싱글 플레이 중(이어하기 화면 등)에 홈으로 나갈 때 지금까지의 점수 강제 저장!
+    if (currentGameMode === 'single' && score > 0) {
+        // 이어하기 카운트다운 중이거나, 일시정지 상태에서 홈으로 나간 경우
+        if (continueTimerId || gameState === STATE.PAUSED) {
+            const finalScore = Math.floor(score);
+            saveMyScore(finalScore);
+            saveScoreToFirebase(finalScore);
+            score = 0; // 중복 저장 방지
+            console.log("💾 로비 퇴장: 싱글 플레이 점수가 안전하게 저장되었습니다.");
+        }
+    }
+
     // 💡 홈 버튼으로 나갈 때, 이어하기 카운트다운을 즉시 종료하고 화면을 닫습니다.
     if (continueTimerId) {
         clearInterval(continueTimerId);
