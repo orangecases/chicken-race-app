@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chicken Race - 모바일 앱 다운로드</title>
+    <style>
+        body {
+            margin: 0; padding: 0; background-color: #ffdeeb; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            height: 100vh; font-family: 'Pretendard', sans-serif; text-align: center;
+        }
+        .container {
+            background: white; padding: 40px 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 80%; max-width: 400px;
+        }
+        h1 { color: #d81b60; margin: 10px 0 20px 0; font-size: 28px; }
+        p { color: #555; margin-bottom: 30px; line-height: 1.6; font-size: 16px; word-break: keep-all; }
+        .btn-group { display: flex; flex-direction: column; gap: 15px; }
+        .btn { 
+            padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; 
+            color: white; font-size: 16px; display: flex; align-items: center; justify-content: center;
+        }
+        .btn.apple { background-color: #000; }
+        .btn.google { background-color: #1a73e8; }
+        .emoji { margin-right: 8px; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="font-size: 60px; margin-bottom: 10px;">🐔</div>
+        <h1>Chicken Race</h1>
+        <p>이 게임은 <strong>모바일 앱 전용</strong>입니다.<br>지금 바로 스토어에서 앱을 다운로드하고 전 세계 유저들과 짜릿한 레이스를 즐겨보세요!</p>
+        <div class="btn-group">
+            <a href="#" class="btn apple"><span class="emoji">🍎</span> App Store에서 받기</a>
+            <a href="#" class="btn google"><span class="emoji">▶️</span> Google Play에서 받기</a>
+        </div>
+    </div>
+</body>
+</html>
