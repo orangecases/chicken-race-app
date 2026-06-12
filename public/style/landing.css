@@ -1,3 +1,18 @@
+@font-face {
+    font-family: 'PixelFont';
+    src: url('../font/upheavtt.woff') format('woff'),
+         url('../font/upheavtt.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'KoreanYNMYTM';
+    src: url('../font/KoreanYNMYTM_Bold.woff') format('woff'),
+         url('../font/KoreanYNMYTM_Bold.ttf') format('truetype');
+    font-weight: 100;
+    font-style: normal;
+}
+
 /* 💡 1. 반응형 뿌리(Root) 설정: 게임과 동일한 스케일링 원리 적용 */
 :root {
   font-size: 16px; /* 기본 화면에서는 1rem = 16px */
