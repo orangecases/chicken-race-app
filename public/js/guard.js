@@ -3,7 +3,7 @@
     
     // 개발자 비밀번호 확인 (?k=7382)
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('k') === '7382') {
+    if (urlParams.get('kit') === '1226') {
         localStorage.setItem('auth_token_temp', 'true'); 
         window.history.replaceState({}, document.title, window.location.pathname);
     }
