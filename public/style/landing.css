@@ -1,0 +1,119 @@
+/* 💡 1. 반응형 뿌리(Root) 설정: 게임과 동일한 스케일링 원리 적용 */
+:root {
+  font-size: 16px; /* 기본 화면에서는 1rem = 16px */
+}
+
+/* 화면 너비가 400px 미만으로 좁아지면, 1rem의 기준 크기가 화면 비율(vw)에 맞춰 서서히 작아집니다. */
+@media (max-width: 400px) {
+  :root {
+    font-size: 4vw; 
+  }
+}
+
+/* ---------------------------------------------------- */
+
+.bg-blur-box {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  padding: 0 2rem;
+  box-sizing: border-box;
+  margin: 0;
+  color: white;
+}
+
+.bg-blur-box::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url(../assets/images/home-bg.png);
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px);
+  z-index: -1;
+  transform: scale(1.05); 
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  max-width: 32rem;
+
+  backdrop-filter: blur(1rem);
+  -webkit-backdrop-filter: blur(1rem);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  border-radius: 2rem;
+
+  border: 1px solid #ffffff33;
+  background-image: linear-gradient(#ffffff12, #ffffff1f), 
+                    linear-gradient(135deg, rgb(255 255 255 / 26%) 0%, rgb(255 255 255 / 3%) 50%, rgb(255 255 255 / 25%) 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.container .game-title {
+  width: 100%;
+  max-width: 12rem;
+  text-align: center;
+}
+
+.container .game-title img {
+  width: 100%;
+}
+
+.container p { 
+  margin: 0;
+  padding: 0;
+  color: #FFFFFF;
+  text-align: center;
+  line-height: 1.6;
+  font-size: 1rem; /* 16px */
+  word-break: keep-all; 
+}
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9375rem; /* 15px */
+}
+
+.btn { 
+  padding: 0.9375rem 1.25rem; /* 15px 20px */
+  border-radius: 0.75rem; /* 12px */
+  text-decoration: none; 
+  font-weight: bold; 
+  color: white; 
+  font-size: 1rem; /* 16px */
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+}
+
+.btn.apple { 
+    background-color: #000000; 
+    color: #ffffff; 
+}
+
+.btn.google { 
+    background-color: #FFFFFF; 
+    color: #191919; 
+    border: 1px solid #dcdcdc; 
+}
+
+.btn .sns-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.5rem;
+    object-fit: contain;
+}
