@@ -1,11 +1,4 @@
 @font-face {
-    font-family: 'PixelFont';
-    src: url('../font/upheavtt.woff') format('woff'),
-         url('../font/upheavtt.ttf') format('truetype');
-    font-weight: bold;
-    font-style: normal;
-}
-@font-face {
     font-family: 'KoreanYNMYTM';
     src: url('../font/KoreanYNMYTM_Bold.woff') format('woff'),
          url('../font/KoreanYNMYTM_Bold.ttf') format('truetype');
