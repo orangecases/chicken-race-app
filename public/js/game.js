@@ -3334,6 +3334,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 chicken.jump(); // 닭 점프 실행
             }
         }
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.key.toLowerCase() === 'b') {
+            const btnBoost = document.getElementById('btn-boost');
+            // 버튼이 화면에 존재하고 숨겨지지 않았을 때만 작동
+            if (btnBoost && btnBoost.offsetParent !== null) { 
+                btnBoost.classList.add('pressed'); // 버튼 눌림 시각 효과 적용
+                btnBoost.click();                  // 실제 버튼 클릭 이벤트 강제 실행
+            }
+        }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -3345,6 +3353,12 @@ document.addEventListener('DOMContentLoaded', () => {
             isJumpPressed = false;
             if (btnJump) btnJump.classList.remove('pressed');
             chicken.cutJump(); // 스페이스바를 떼면 소점프 처리
+        }
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.key.toLowerCase() === 'b') {
+            const btnBoost = document.getElementById('btn-boost');
+            if (btnBoost) {
+                btnBoost.classList.remove('pressed'); // 버튼 눌림 효과 제거
+            }
         }
     });
 
