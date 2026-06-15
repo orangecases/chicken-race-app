@@ -3336,10 +3336,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.key.toLowerCase() === 'b') {
             const btnBoost = document.getElementById('btn-boost');
-            // 버튼이 화면에 존재하고 숨겨지지 않았을 때만 작동
+            
             if (btnBoost && btnBoost.offsetParent !== null) { 
-                btnBoost.classList.add('pressed'); // 버튼 눌림 시각 효과 적용
-                btnBoost.click();                  // 실제 버튼 클릭 이벤트 강제 실행
+                // 1. 이미 눌려있는 상태면 중복 실행 방지 (키보드 꾹 누를 때 연속 발생 방지)
+                if (btnBoost.classList.contains('pressed')) return; 
+
+                // 2. 시각 효과 적용
+                btnBoost.classList.add('pressed'); 
+                
+                // 3. ✨ [핵심 수정] 단순 click() 대신 모바일 터치와 마우스 클릭 이벤트를 동시에 강제 발생!
+                btnBoost.dispatchEvent(new Event('touchstart'));
+                btnBoost.dispatchEvent(new Event('mousedown'));
+                btnBoost.dispatchEvent(new PointerEvent('pointerdown'));
             }
         }
     });
@@ -3357,7 +3365,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.key.toLowerCase() === 'b') {
             const btnBoost = document.getElementById('btn-boost');
             if (btnBoost) {
-                btnBoost.classList.remove('pressed'); // 버튼 눌림 효과 제거
+                btnBoost.classList.remove('pressed'); 
+                
+                // ✨ 뗄 때도 터치 종료 이벤트를 발생시켜 게임 로직이 정상 종료되도록 처리
+                btnBoost.dispatchEvent(new Event('touchend'));
+                btnBoost.dispatchEvent(new Event('mouseup'));
+                btnBoost.dispatchEvent(new PointerEvent('pointerup'));
             }
         }
     });
