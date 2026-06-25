@@ -493,7 +493,18 @@ function setControlsVisibility(visible) {
 
 // [신규] 사운드 재생 헬퍼 함수
 function playSound(key) {
-    if (!isSoundOn || !audios[key]) return;
+    // 1. 사운드가 꺼져있으면 재생 안 함
+    if (!isSoundOn) return;
+
+    // 🟢 2. [추가됨] iOS 네이티브 앱 환경이고, BGM이 아닐 경우 브릿지 호출!
+    if (window.webkit && window.webkit.messageHandlers.playSound && key !== 'bgm') {
+        window.webkit.messageHandlers.playSound.postMessage(key);
+        return; // 네이티브로 재생을 넘겼으니, 여기서 웹 재생 로직은 종료합니다.
+    }
+
+    // 3. 기존 로직 (안드로이드, 일반 웹 브라우저, 또는 BGM일 경우 작동)
+    if (!audios[key]) return;
+    
     if (key === 'bgm') {
         audios[key].play().catch((e) => console.warn('BGM 재생 실패:', e));
     } else {
@@ -508,9 +519,11 @@ function playSound(key) {
         sound.play().catch((e) => console.warn('효과음 재생 실패:', e));
     }
 }
+
 function pauseBGM() {
     if (audios['bgm']) audios['bgm'].pause();
 }
+
 function stopBGM() {
     if (audios['bgm']) { audios['bgm'].pause(); audios['bgm'].currentTime = 0; }
 }
