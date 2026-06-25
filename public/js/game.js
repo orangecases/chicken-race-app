@@ -506,6 +506,7 @@ function playSound(key) {
     if (!audios[key]) return;
     
     if (key === 'bgm') {
+        audios[key].volume = 0.3; // 🟢 BGM 볼륨을 30%로 줄임 (0.0 ~ 1.0 사이로 조절 가능)
         audios[key].play().catch((e) => console.warn('BGM 재생 실패:', e));
     } else {
         const sound = audios[key].cloneNode();
