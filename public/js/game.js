@@ -493,39 +493,44 @@ function setControlsVisibility(visible) {
 
 // [신규] 사운드 재생 헬퍼 함수
 function playSound(key) {
-    // 1. 사운드가 꺼져있으면 재생 안 함
     if (!isSoundOn) return;
 
-    // 🟢 2. [추가됨] iOS 네이티브 앱 환경이고, BGM이 아닐 경우 브릿지 호출!
-    if (window.webkit && window.webkit.messageHandlers.playSound && key !== 'bgm') {
+    // 🟢 BGM을 포함한 모든 사운드를 iOS 네이티브로 넘김 (key !== 'bgm' 조건 삭제)
+    if (window.webkit && window.webkit.messageHandlers.playSound) {
         window.webkit.messageHandlers.playSound.postMessage(key);
-        return; // 네이티브로 재생을 넘겼으니, 여기서 웹 재생 로직은 종료합니다.
+        return; 
     }
 
-    // 3. 기존 로직 (안드로이드, 일반 웹 브라우저, 또는 BGM일 경우 작동)
+    // 3. 기존 로직 (안드로이드, 일반 웹 브라우저용)
     if (!audios[key]) return;
     
     if (key === 'bgm') {
-        audios[key].volume = 0.8; // 🟢 BGM 볼륨을 30%로 줄임 (0.0 ~ 1.0 사이로 조절 가능)
+        audios[key].volume = 0.5;
         audios[key].play().catch((e) => console.warn('BGM 재생 실패:', e));
     } else {
         const sound = audios[key].cloneNode();
-        if (key === 'jump') {
-            sound.volume = 0.1; // [수정] 점프 소리가 커서 별도로 줄임
-        } else if (key === 'crash' || key === 'feather' || key === 'start') {
-            sound.volume = 0.8; // [수정] 충돌 및 깃털 소리는 잘 들리게 키움
-        } else {
-            sound.volume = 0.1; // [수정] 그 외 효과음도 약간 줄임
-        }
+        if (key === 'jump') sound.volume = 0.1;
+        else if (key === 'crash' || key === 'feather' || key === 'start') sound.volume = 0.8;
+        else sound.volume = 0.1;
         sound.play().catch((e) => console.warn('효과음 재생 실패:', e));
     }
 }
 
 function pauseBGM() {
+    // 🟢 네이티브 BGM 일시정지 브릿지 호출
+    if (window.webkit && window.webkit.messageHandlers.pauseBGM) {
+        window.webkit.messageHandlers.pauseBGM.postMessage("bgm");
+        return;
+    }
     if (audios['bgm']) audios['bgm'].pause();
 }
 
 function stopBGM() {
+    // 🟢 네이티브 BGM 정지 브릿지 호출
+    if (window.webkit && window.webkit.messageHandlers.stopBGM) {
+        window.webkit.messageHandlers.stopBGM.postMessage("bgm");
+        return;
+    }
     if (audios['bgm']) { audios['bgm'].pause(); audios['bgm'].currentTime = 0; }
 }
 
