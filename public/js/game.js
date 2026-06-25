@@ -1894,7 +1894,7 @@ async function attemptToJoinRoom(room) {
         return;
     }
 
-    const cost = room.attempts;
+    const cost = 2;
     if (currentUser.coins < cost) {
         alert(`코인이 부족합니다. (필요: ${cost}, 보유: ${currentUser.coins})`);
         return;
@@ -2179,7 +2179,7 @@ function renderRaceRoomList() {
                     <span class="${statusClass}">${statusText}</span>
                     <span class="game_info">${rankTypeText}</span>
                     <img class="coin" src="assets/images/icon_coin.png">
-                    <span class="game_info">X <strong>${room.attempts}</strong></span>
+                    <span class="game_info">X <strong>2</strong></span>
                 </label>
                 <p>${room.title} ${debugButtonsHTML}</p>
             </div>
@@ -2237,8 +2237,6 @@ function renderMyRoomList() {
                     <label>
                         <span class="${myRoomStatusClass}">${myRoomStatusText}</span>
                         <span class="game_info">${rankTypeText}</span>
-                        <img class="coin" src="assets/images/icon_coin.png">
-                        <span class="game_info">X <strong>${room.attempts}</strong></span>
                     </label>
                     <p>${room.title} ${debugButtonsHTML}</p>
                 </div>
@@ -3667,7 +3665,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('인원 제한으로 참여할 수 없습니다.');
                 return;
             }
-            const cost = targetRoom.attempts;
+            const cost = 2;
             if (!currentUser || currentUser.coins < cost) {
                 alert(`코인이 부족합니다.\n(필요: ${cost}, 보유: ${currentUser ? currentUser.coins : 0})`);
                 return;
