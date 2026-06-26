@@ -3517,6 +3517,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })();
 
+    // 🟢 센스 있는 랜덤 방 제목 자판기! (마음껏 추가하세요)
+    let currentRandomTitle = "이 구역 미친 닭 누구야?";
+    const funRoomTitles = [
+        "이 구역 미친 닭 누구야?",
+        "오늘 저녁은 치킨이닭!",
+        "양념 반 후라이드 반",
+        "닭가슴살은 이제 그만",
+        "날지 못하는 새들의 반란",
+        "1등하면 치킨 사드림",
+        "아무나 들어와라 꼬꼬",
+        "계란으로 바위치기",
+        "내가 조선의 국모닭",
+        "닭들의 숨막히는 레이스",
+        "치킨런 실사판 대개봉",
+        "알 낳고 갈래?",
+        "닭다리 걸고 한판 승부!",
+        "파닭파닭 거리지마라",
+        "내 스피드는 시속 100km닭",
+        "빨리 안 오면 다 튀겨버림",
+        "너희들은 뛰니? 나는 난닭",
+        "초보만 오세요 (진짜임)",
+        "고인물 출입 금지",
+        "나보다 빠른 닭 나와봐",
+        "치킨 냄새 맡고 왔습니다",
+        "다이어트 중인데 치킨 먹어도 됨?",
+        "순살파 vs 뼈닭파 대결",
+        "간장치킨 땡기는 레이스",
+        "마지막에 웃는 닭은 누구?",
+        "닭치고 뛰어!",
+        "너의 등짝을 쪼아주마",
+        "날개 달린 자들의 경주",
+        "알에서 깨어난 지 5분 됨",
+        "K-치킨의 위엄을 보여주마",
+        "치킨런: 닭들의 반란",
+        "오늘도 치킨은 달린다",
+        "치킨 먹고 힘내자",
+        "닭들의 숨막히는 레이스",
+    ];
+
     if (btnCreateOpen) {
         btnCreateOpen.onclick = () => {
             if (!isLoggedIn) {
@@ -3530,10 +3569,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
+
+            // 🟢 방 만들기 창을 열 때마다 랜덤으로 제목 하나를 뽑습니다.
+            currentRandomTitle = funRoomTitles[Math.floor(Math.random() * funRoomTitles.length)];
+            
+            const titleInputEl = document.getElementById('input-room-title');
+            if (titleInputEl) {
+                titleInputEl.value = ''; // 기존에 적혀있던 글씨 비우기
+                titleInputEl.placeholder = `${currentRandomTitle} (최대 20자)`; // 옅은 글씨로 추천 제목 띄우기
+            }
+
             document.getElementById('input-room-password-create').value = ''; 
             sceneCreateRoom.classList.remove('hidden');
         };
     }
+
     if (btnCreateCancel) btnCreateCancel.onclick = () => sceneCreateRoom.classList.add('hidden');
 
     if (btnMember) {
@@ -3608,7 +3658,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const roomRef = db.collection("rooms").doc(); 
 
                 const roomData = {
-                    title: titleInput || "즐거운 레이스",
+                    title: titleInput || currentRandomTitle,
                     password: passwordInput.length > 0 ? passwordInput : null,
                     maxPlayers: parseInt(limitInput) || 5,
                     currentPlayers: 1, 
