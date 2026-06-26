@@ -3089,10 +3089,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const botId = `bot_debug_${Date.now()}`;
-                    const botNames = ["초보닭", "중수닭", "고수닭", "치킨런봇", "AI닭"];
+                    const botNames = ["달려라치킨", "양념반후라이드반", "치킨은살안쪄", "다이어트내일부터", "꼬꼬댁꼬꼬", "1일1닭", "치킨마스터", "병아리반장", "구구구", "닭다리살인마", "치킨무많이", "뿌링클매니아", "BBQVIP", "교촌레드콤보", "야식참는중"];
+                    
+                    // 🟢 무작위로 하나를 뽑고, 뒤에 붙던 '_1234' 같은 숫자는 제거해서 깔끔하게 만듭니다.
+                    const randomName = botNames[Math.floor(Math.random() * botNames.length)];
+                    
                     const botData = {
                         id: botId,
-                        name: `${botNames[Math.floor(Math.random() * botNames.length)]}_${String(Date.now()).slice(-4)}`,
+                        name: randomName,
                         isBot: true,
                         score: 0,
                         totalScore: 0,
@@ -3627,8 +3631,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentUser && currentUser.isAdmin) {
                     const botBatch = db.batch();
                     const botRef = roomRef.collection('participants').doc(`bot_${Date.now()}`);
-                    const botData = { id: botRef.id, name: '초보닭', isBot: true, score: 0, totalScore: 0, bestScore: 0, status: 'waiting', displayScore: 0, attemptsLeft: attempts, startDelay: 60, targetScore: 750 }; 
+                    
+                    // 🟢 방 생성 시 기본으로 들어오는 봇도 랜덤 닉네임 적용
+                    const initBotNames = ["초보지만열심히", "닭다리내꺼", "치킨런장인", "황금올리브", "야식은치킨", "달리는통닭", "계란이먼저냐"];
+                    const randomInitName = initBotNames[Math.floor(Math.random() * initBotNames.length)];
+                    
+                    const botData = { id: botRef.id, name: randomInitName, isBot: true, score: 0, totalScore: 0, bestScore: 0, status: 'waiting', displayScore: 0, attemptsLeft: attempts, startDelay: 60, targetScore: 750 }; 
                     botBatch.set(botRef, botData);
+
                     botBatch.update(roomRef, { currentPlayers: firebase.firestore.FieldValue.increment(1) });
                     await botBatch.commit();
                     console.log("✅ 2단계: 초기 봇 추가 완료!");
