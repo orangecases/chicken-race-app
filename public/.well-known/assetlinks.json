@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kitworks.chickenrace",
+      "sha256_cert_fingerprints": [
+        "A3:99:B0:15:A8:D8:D0:EE:5B:DD:D5:5B:1B:2F:95:B2:50:69:26:A0:FF:48:21:5C:09:F0:68:4F:5A:B5:87:12",
+        "0B:06:5C:6D:CB:9A:2C:75:FA:AD:8E:78:BD:BC:4B:E7:0C:43:C2:D6:70:DA:EE:E4:41:D5:B4:28:5D:7E:6C:35"
+      ]
+    }
+  }
+]
