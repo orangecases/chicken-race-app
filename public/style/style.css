@@ -45,6 +45,18 @@ html, body small{font-size: 70%;}
 
 body{
     background-color: rgba(0, 0, 0, 0.5);
+
+    /* 꾹 눌렀을 때 뜨는 팝업 메뉴(복사, 번역 등) 원천 차단 */
+    -webkit-touch-callout: none;
+
+    /* 텍스트 드래그 및 선택 방지 */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    /* 돋보기 효과 방지 (선택 사항) */
+    -webkit-user-drag: none;
 }
 body::before{
     content: "";

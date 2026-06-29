@@ -3324,21 +3324,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnJump) {
         const handleJumpStart = (e) => { e.preventDefault(); isJumpPressed = true; btnJump.classList.add('pressed'); };
         const handleJumpEnd = (e) => { e.preventDefault(); isJumpPressed = false; chicken.cutJump(); btnJump.classList.remove('pressed'); };
+        
         btnJump.addEventListener('mousedown', handleJumpStart);
         btnJump.addEventListener('mouseup', handleJumpEnd);
         btnJump.addEventListener('mouseleave', handleJumpEnd);
         btnJump.addEventListener('touchstart', handleJumpStart, { passive: false });
         btnJump.addEventListener('touchend', handleJumpEnd);
+        btnJump.addEventListener('touchcancel', handleJumpEnd); 
     }
 
     if (btnBoost) {
         const handleBoostStart = (e) => { e.preventDefault(); chicken.isBoosting = true; btnBoost.classList.add('pressed'); };
         const handleBoostEnd = (e) => { e.preventDefault(); chicken.isBoosting = false; btnBoost.classList.remove('pressed'); };
+        
         btnBoost.addEventListener('mousedown', handleBoostStart);
         btnBoost.addEventListener('mouseup', handleBoostEnd);
         btnBoost.addEventListener('mouseleave', handleBoostEnd);
         btnBoost.addEventListener('touchstart', handleBoostStart, { passive: false });
         btnBoost.addEventListener('touchend', handleBoostEnd);
+        btnBoost.addEventListener('touchcancel', handleBoostEnd);
     }
 
     // [신규] PC 환경 스페이스바 점프 이벤트 추가
