@@ -2154,7 +2154,6 @@ function renderRaceRoomList() {
     raceRoomsToRender.forEach(room => {
         const userRoomState = (isLoggedIn && currentUser && currentUser.joinedRooms) ? currentUser.joinedRooms[room.id] : null;
 
-        const rankTypeText = room.rankType === 'total' ? '합산점' : '최고점';
         const lockImg = room.isLocked ? `<img class="lock" src="assets/images/icon_lock.png">` : '';
 
         const debugButtonsHTML = (currentUser && currentUser.isAdmin)
@@ -2180,7 +2179,6 @@ function renderRaceRoomList() {
             <div class="info">
                 <label>
                     <span class="${statusClass}">${statusText}</span>
-                    <span class="game_info">${rankTypeText}</span>
                     <img class="coin" src="assets/images/icon_coin.png">
                     <span class="game_info">X <strong>2</strong></span>
                 </label>
@@ -2223,7 +2221,6 @@ function renderMyRoomList() {
     myRooms.forEach(room => {
         const userRoomState = (isLoggedIn && currentUser && currentUser.joinedRooms) ? currentUser.joinedRooms[room.id] : null;
         if (userRoomState && !userRoomState.hidden) {
-            const rankTypeText = room.rankType === 'total' ? '합산점' : '최고점';
             const debugButtonsHTML = (currentUser && currentUser.isAdmin)
                 ? `<button class="debug-btn" data-room-id="${room.id}" data-action="add">+</button><button class="debug-btn" data-room-id="${room.id}" data-action="remove">-</button>`
                 : '';
@@ -2239,7 +2236,6 @@ function renderMyRoomList() {
                 <div class="info">
                     <label>
                         <span class="${myRoomStatusClass}">${myRoomStatusText}</span>
-                        <span class="game_info">${rankTypeText}</span>
                     </label>
                     <p>${room.title} ${debugButtonsHTML}</p>
                 </div>
