@@ -39,7 +39,8 @@ let nextLevelFrameThreshold = 400; // 난이도 상승 기준 (약 6.5초)
 let currentGameMode = 'single';
 let isGameReady = false;
 let gameLoopId = null;
-let isSoundOn = true; // [신규] 사운드 상태 (true: ON, false: OFF)
+let isEffectOn = true; // 효과음 상태
+let isBgmOn = true;    // 배경음악 상태
 let isLoggedIn = false; // [신규] 로그인 상태
 let currentUser = null; // [신규] 로그인한 사용자 정보
 let unsubscribeUserData = null; // [신규] 유저 데이터 리스너 해제 함수
@@ -493,7 +494,9 @@ function setControlsVisibility(visible) {
 
 // [신규] 사운드 재생 헬퍼 함수
 function playSound(key) {
-    if (!isSoundOn) return;
+    // bgm일 때는 isBgmOn을 확인하고, 그 외의 효과음일 때는 isEffectOn을 확인합니다.
+    if (key === 'bgm' && !isBgmOn) return;
+    if (key !== 'bgm' && !isEffectOn) return;
 
     // 🟢 BGM을 포함한 모든 사운드를 iOS 네이티브로 넘김 (key !== 'bgm' 조건 삭제)
     if (window.webkit && window.webkit.messageHandlers.playSound) {
@@ -3857,16 +3860,33 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    if (btnSoundToggle) {
-        btnSoundToggle.classList.toggle('sound-on', isSoundOn);
-        btnSoundToggle.classList.toggle('sound-off', !isSoundOn);
+    // 효과음 버튼 제어
+    const btnEffectToggle = document.getElementById('btn-sound-toggle');
+    if (btnEffectToggle) {
+        btnEffectToggle.classList.toggle('effect-on', isEffectOn);
+        btnEffectToggle.classList.toggle('effect-off', !isEffectOn);
 
-        btnSoundToggle.onclick = () => {
-            isSoundOn = !isSoundOn; 
-            btnSoundToggle.classList.toggle('sound-on', isSoundOn);
-            btnSoundToggle.classList.toggle('sound-off', !isSoundOn);
-            console.log(`사운드 상태: ${isSoundOn ? 'ON' : 'OFF'}`);
-            if (isSoundOn) {
+        btnEffectToggle.onclick = () => {
+            isEffectOn = !isEffectOn; 
+            btnEffectToggle.classList.toggle('effect-on', isEffectOn);
+            btnEffectToggle.classList.toggle('effect-off', !isEffectOn);
+            console.log(`효과음 상태: ${isEffectOn ? 'ON' : 'OFF'}`);
+        };
+    }
+
+    // [신규] 배경음악 버튼 제어
+    const btnBgmToggle = document.getElementById('btn-bgm-toggle');
+    if (btnBgmToggle) {
+        btnBgmToggle.classList.toggle('bgm-on', isBgmOn);
+        btnBgmToggle.classList.toggle('bgm-off', !isBgmOn);
+
+        btnBgmToggle.onclick = () => {
+            isBgmOn = !isBgmOn; 
+            btnBgmToggle.classList.toggle('bgm-on', isBgmOn);
+            btnBgmToggle.classList.toggle('bgm-off', !isBgmOn);
+            console.log(`BGM 상태: ${isBgmOn ? 'ON' : 'OFF'}`);
+            
+            if (isBgmOn) {
                 if (gameState === STATE.PLAYING) playSound('bgm');
             } else {
                 pauseBGM();

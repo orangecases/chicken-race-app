@@ -45,18 +45,6 @@ html, body small{font-size: 70%;}
 
 body{
     background-color: rgba(0, 0, 0, 0.5);
-
-    /* 꾹 눌렀을 때 뜨는 팝업 메뉴(복사, 번역 등) 원천 차단 */
-    -webkit-touch-callout: none;
-
-    /* 텍스트 드래그 및 선택 방지 */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-
-    /* 돋보기 효과 방지 (선택 사항) */
-    -webkit-user-drag: none;
 }
 body::before{
     content: "";
@@ -237,7 +225,7 @@ body::before{
     justify-content: flex-start;
     align-items: flex-start;
     pointer-events: none;
-    z-index: 10;
+    z-index: 10;s
 }
 
 .hud-score, .hud-rank, .hud-level {
@@ -301,15 +289,21 @@ body::before{
 }
 
 /* 사운드 버튼 */
-.ui-icon-btn.--sound {
+.ui-icon-btn.--effect {
     right: 1rem;
 }
-.ui-icon-btn.--sound.sound-on { background-image: url('../assets/images/icon_sound_on.png'); }
-.ui-icon-btn.--sound.sound-off { background-image: url('../assets/images/icon_sound_off.png'); }
+.ui-icon-btn.--effect.effect-on { background-image: url('../assets/images/icon_sound_on.png'); }
+.ui-icon-btn.--effect.effect-off { background-image: url('../assets/images/icon_sound_off.png'); }
+
+.ui-icon-btn.--bgm {
+    right: 3.5rem;
+}
+.ui-icon-btn.--bgm.bgm-on { background-image: url('../assets/images/icon_bgm_on.png'); }
+.ui-icon-btn.--bgm.bgm-off { background-image: url('../assets/images/icon_bgm_off.png'); }
 
 /* 일시정지 버튼 */
 .ui-icon-btn.--pause {
-    right: 3.5rem; /* 사운드 버튼 왼쪽에 위치 */
+    right: 6rem; /* 사운드 버튼 왼쪽에 위치 */
     background-image: url('../assets/images/icon_pause.png');
 }
 /* (참고) 일시정지 토글 기능 구현 시 사용할 수 있는 스타일 */
@@ -435,6 +429,24 @@ body::before{
     background-size: 0.875rem;
     background-repeat: no-repeat;
     background-position: 0.75rem 0.45rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    color: white;
+    font-size: 0.875rem;
+}
+.btn-close-to-home {
+    all: unset;
+    position: absolute;
+    top: 1rem;
+    left: 0.75rem;
+    border-radius: 2rem;
+    border: solid 0.125rem #2e4b5f;
+    padding: 0.25rem 0.75rem 0.35rem 1.75rem;
+    background-color: #244155;
+    background-image: url(../assets/images/ico128-close.png);
+    background-size: 0.75rem;
+    background-repeat: no-repeat;
+    background-position: 0.75rem 0.55rem;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     color: white;
