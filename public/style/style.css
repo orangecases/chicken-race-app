@@ -284,26 +284,26 @@ body::before{
 
 /* 멤버 버튼 */
 .ui-icon-btn.--member {
-    left: 1rem;
+    left: 4cqw;
     background-image: url('../assets/images/icon_member.png');
 }
 
 /* 사운드 버튼 */
 .ui-icon-btn.--effect {
-    right: 1rem;
+    right: 4cqw;
 }
 .ui-icon-btn.--effect.effect-on { background-image: url('../assets/images/icon_sound_on.png'); }
 .ui-icon-btn.--effect.effect-off { background-image: url('../assets/images/icon_sound_off.png'); }
 
 .ui-icon-btn.--bgm {
-    right: 3.5rem;
+    right: 13cqw;
 }
 .ui-icon-btn.--bgm.bgm-on { background-image: url('../assets/images/icon_bgm_on.png'); }
 .ui-icon-btn.--bgm.bgm-off { background-image: url('../assets/images/icon_bgm_off.png'); }
 
 /* 일시정지 버튼 */
 .ui-icon-btn.--pause {
-    right: 6rem; /* 사운드 버튼 왼쪽에 위치 */
+    right: 22cqw; /* 사운드 버튼 왼쪽에 위치 */
     background-image: url('../assets/images/icon_pause.png');
 }
 /* (참고) 일시정지 토글 기능 구현 시 사용할 수 있는 스타일 */
@@ -470,8 +470,8 @@ body::before{
 .coin-stat {
     all: unset;
     position: absolute;
-    top: 1rem;
-    right: 0.75rem;
+    top: 3.5cqw;
+    right: 4cqw;
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -479,7 +479,7 @@ body::before{
     font-size: 1rem;
 }
 .coin-stat img{
-    width: 2rem;
+    width: 2.25rem;
 }
 
 
@@ -911,10 +911,6 @@ body::before{
 #btn-create-room-open:active,
 #btn-create-room-open.pressed {
     background-image: url('../assets/images/btn-create_pressed.png');
-}
-
-#game-start-screen img {
-    width: 2rem;
 }
 
 /* 준비화면의 시작 버튼 (기존 btn-race-start) */
