@@ -1044,7 +1044,14 @@ function gameLoop(timestamp) {
             gameSpeed = 0;
             if (chicken.y >= FLOOR_Y) {
                 if (currentGameMode === 'single' && !hasRevived) {
-                    showContinueScreen(); 
+                    // 💡 [수정] 코인이 1개 이상이면 이어하기 창, 0개면 바로 결과창(게임오버) 직행!
+                    const currentCoins = currentUser ? currentUser.coins : guestCoins;
+                    if (currentCoins >= 1) {
+                        showContinueScreen(); 
+                    } else {
+                        gameState = STATE.GAMEOVER;
+                        handleGameOverUI();
+                    }
                 } else {
                     gameState = STATE.GAMEOVER;
                     if (currentGameMode === 'multi' && currentRoom && currentUser) {
@@ -1664,31 +1671,18 @@ function resumeFromContinue() {
 function handleSinglePlayerStartCost() {
     if (currentGameMode !== 'single') return true; // 싱글 모드가 아니면 항상 통과
 
-    const cost = 1;
+    const cost = 1; // 싱글 플레이 1회 비용
     const currentCoins = currentUser ? currentUser.coins : guestCoins;
 
-    // 코인 부족 확인
+    // 💡 1. 코인이 0개일 때: 바로 광고 시청 모달을 띄우고 게임 시작을 막습니다.
     if (currentCoins < cost) {
-        // [수정] 게스트의 코인이 부족할 경우, 자동 충전 대신 로그인 화면을 띄워줍니다.
-        if (!currentUser) {
-            alert("코인이 모두 소진되었습니다. 로그인하여 더 많은 코인을 획득하세요!");
-            const sceneAuth = document.getElementById('scene-auth');
-            if (sceneAuth) {
-                sceneAuth.classList.remove('hidden');
-                const authMsg = sceneAuth.querySelector('.auth-message');
-                if (authMsg) {
-                    authMsg.style.display = 'block';
-                    authMsg.innerText = '코인을 모두 소진했습니다. 로그인 후 코인을 충전하거나 더 많은 게임에 참여할 수 있습니다.';
-                }
-            }
-        } else {
-            // 로그인한 유저의 코인이 부족한 경우
-            alert("코인이 부족하여 게임을 시작할 수 없습니다.");
+        if (typeof window.showCoinShortageModal === 'function') {
+            window.showCoinShortageModal();
         }
-        return false;
+        return false; // 게임 시작 취소
     }
 
-    // 코인 차감
+    // 💡 2. 코인이 있을 때: 정상적으로 1코인 차감 후 게임 시작 허락!
     if (currentUser) {
         currentUser.coins -= cost;
         syncCoinsToServer(currentUser.coins);
@@ -1696,8 +1690,9 @@ function handleSinglePlayerStartCost() {
         guestCoins -= cost;
         localStorage.setItem('chickenRunGuestCoins', guestCoins);
     }
+    
     updateCoinUI();
-    return true;
+    return true; // 게임 시작 진행
 }
 
 /**
