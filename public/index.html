@@ -130,6 +130,20 @@
         </div>
     </section>
 
+    <section id="scene-coin-shortage" class="hidden">
+        <div class="modal-container modal-theme-orange">
+            <div class="modal-body" style="text-align: center;">
+                <img src="assets/images/icon_coin.png" class="coin">
+                <p class="modal-notice">코인이 부족합니다!<br>광고를 시청하고 코인을 충전하세요!<br>
+                <small><strong id="ad-count-display">(0/10 시청)</strong> 매일 자정 초기화 됩니다.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-shortage-cancel" class="pixelbtn pixelbtn--neutral">취소</button>
+                <button id="btn-shortage-watch-ad" class="pixelbtn pixelbtn--primary">광고 시청</button>
+            </div>
+        </div>
+    </section>
+
     <section id="scene-delete-room-confirm" class="hidden">
         <div class="modal-container modal-theme-orange">
             <div class="modal-body">
@@ -256,7 +270,7 @@
                     <span class="play-cost"><img src="assets/images/icon_coin.png"> - <strong>1</strong></span>
                 </button>
                 <button id="btn-delete-room" class="btn-delete-from-list">참가중인 목록에서 삭제</button>         
-                <button id="btn-exit-from-gameover" class="btn-exit-to-home">HOME</button>
+                <button id="btn-exit-from-gameover" class="btn-close-to-home">CLOSE</button>
                 <label class="coin-stat"><img src="assets/images/icon_coin.png" /> X <strong>50</strong></label>
                 <p class="time-message">30초 후 자동 시작</p>
             </div>

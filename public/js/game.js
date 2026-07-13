@@ -1203,16 +1203,18 @@ function renderMyRecordList(append = false) {
 }
 
 /**
- * [신규] 'Top 100' 탭의 목록을 그립니다.
+ * 'Top 100' 탭의 목록을 그립니다.
  */
 function renderTop100List() {
     const listEl = document.querySelector('#content-top-100 .score-list');
     if (!listEl) return;
-    listEl.innerHTML = '';
+    
+    // 리스트를 비울 때, 안내 문구를 가장 먼저 고정으로 넣어줍니다!
+    listEl.innerHTML = '<li class="notice">※ 로그인 사용자의 점수만 순위에 기록됩니다.</li>';
 
-    // 💡 [신규 추가] 데이터를 아직 못 가져와서 배열이 비어있을 때 '로딩 중' 표시!
+    // 💡 데이터를 아직 못 가져와서 배열이 비어있을 때 '로딩 중' 표시!
     if (top100Scores.length === 0) {
-        listEl.innerHTML = '<li><div class="info" style="text-align:center; width:100%;"><p>랭킹 데이터를 불러오는 중입니다...</p></div></li>';
+        listEl.innerHTML += '<li><div class="info" style="text-align:center; width:100%;"><p>랭킹 데이터를 불러오는 중입니다...</p></div></li>';
         return;
     }
 
@@ -2592,16 +2594,24 @@ async function removeFromMyRooms() {
 function getAdData() {
     const todayStr = getTodayString();
     
-    // 로그인을 안 했거나 데이터가 없으면 기본값 반환
-    if (!currentUser) return { count: 0, date: todayStr };
-    
-    // 💡 핵심 방어 로직: 서버에 기록된 날짜가 '오늘'이 아니면? (어제 본 거면)
-    if (currentUser.lastAdDate !== todayStr) {
-        currentUser.adCount = 0; // 횟수 초기화!
-        currentUser.lastAdDate = todayStr; // 날짜를 오늘로 갱신!
+    if (!currentUser) {
+        // [비로그인(게스트) 유저]
+        let guestAdData = JSON.parse(localStorage.getItem('chickenRunGuestAdData') || '{"count": 0, "date": ""}');
+        // 날짜가 다르면(어제 본 거면) 횟수 초기화
+        if (guestAdData.date !== todayStr) {
+            guestAdData.count = 0;
+            guestAdData.date = todayStr;
+            localStorage.setItem('chickenRunGuestAdData', JSON.stringify(guestAdData));
+        }
+        return { count: guestAdData.count, date: guestAdData.date };
     }
     
-    // 서버에 기록된 횟수 반환 (기록이 아예 없으면 0)
+    // [로그인 유저]
+    if (currentUser.lastAdDate !== todayStr) {
+        currentUser.adCount = 0;
+        currentUser.lastAdDate = todayStr;
+    }
+    
     return { 
         count: currentUser.adCount || 0, 
         date: currentUser.lastAdDate 
@@ -2614,10 +2624,6 @@ function getAdData() {
 function watchAdAndGetReward() {
     let adTimerInterval = null; 
     // 🔒 [원상복구] 로그인을 안 한 유저(웹 환경)는 광고 보상을 받을 수 없도록 막습니다!
-    if (!currentUser) {
-        alert('로그인 후 이용해주세요.');
-        return; // 여기서 함수를 끝내버려서 아래쪽의 광고 로직이 실행되지 않게 합니다.
-    }
 
     const adData = getAdData();
     if (adData.count >= AD_CONFIG.DAILY_LIMIT) {
@@ -2710,57 +2716,65 @@ function watchAdAndGetReward() {
 
 // 🌟 [최종 수정됨] 앱에서 광고 시청 완료 신호가 오면, 예쁜 보상 화면을 즉석에서 그려서 띄우기!
 window.giveRewardFromApp = function() {
-    console.log("🎁 띠링! 앱에서 진짜 광고 보상 지급 신호가 도착했습니다!");
+    console.log("🎁 띠링! 보상 지급 신호 도착!");
+    const todayStr = getTodayString();
 
     if (currentUser) {
-        // 🌟 [수정됨] 1. 코인과 광고 횟수를 올리고 '서버'로 전송하기!
-        const todayStr = getTodayString();
+        // [로그인 유저 보상 처리]
         currentUser.coins += AD_CONFIG.REWARD;
         currentUser.adCount = (currentUser.adCount || 0) + 1;
         currentUser.lastAdDate = todayStr;
-        
-        // 브라우저 금고 대신, 방금 만든 '서버 동기화 함수'를 출동시킵니다!
         syncAdRewardToServer(currentUser.coins, currentUser.adCount, currentUser.lastAdDate);
-        updateCoinUI();
+    } else {
+        // [비로그인(게스트) 보상 처리 신규 추가]
+        guestCoins += AD_CONFIG.REWARD;
+        localStorage.setItem('chickenRunGuestCoins', guestCoins.toString());
+        
+        // 게스트 시청 횟수 증가
+        let guestAdData = JSON.parse(localStorage.getItem('chickenRunGuestAdData') || '{"count": 0, "date": ""}');
+        guestAdData.count += 1;
+        guestAdData.date = todayStr;
+        localStorage.setItem('chickenRunGuestAdData', JSON.stringify(guestAdData));
+    }
 
-        // 2. 예쁜 보상 화면 띄우기 로직
-        let adOverlay = document.getElementById('scene-ad-overlay');
+    // 화면의 코인 숫자 업데이트
+    updateCoinUI();
 
-        // 스마트폰에서는 도화지가 아예 없을 수 있으므로, 없으면 새로 만들어줍니다!
-        if (!adOverlay) {
-            adOverlay = document.createElement('div');
-            adOverlay.id = 'scene-ad-overlay';
-            // 전체 화면을 덮는 까만 반투명 배경 스타일 적용
-            adOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center;";
-            document.body.appendChild(adOverlay);
+    // ==========================================
+    // 아래는 예쁜 보상 화면 띄우기 로직 (기존 코드 유지)
+    // ==========================================
+    let adOverlay = document.getElementById('scene-ad-overlay');
 
-            // 예쁜 보상 획득 UI HTML을 즉석에서 꽂아넣습니다.
-            adOverlay.innerHTML = `
-                <div id="ad-view-finished" class="ad-view" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
-                    <img src="assets/images/icon_coin.png" style="width:5rem; image-rendering: pixelated; margin-bottom:1rem;">
-                    <p style="font-size: 2rem; color: #ffd02d; font-family: 'KoreanYNMYTM', sans-serif; margin-bottom:0.5rem; text-shadow: 2px 2px 0px #000;">보상 획득!</p>
-                    <p style="font-size: 1.2rem; color: white; margin-bottom:2rem; font-weight:bold;">+${AD_CONFIG.REWARD} 코인</p>
-                    <button id="btn-ad-close" class="pixelbtn pixelbtn--primary" style="font-size: 1.2rem; padding: 10px 40px;">닫기</button>
-                </div>
-            `;
-        } else {
-            // 이미 도화지가 있다면 화면에 보이게만 해줍니다.
-            adOverlay.classList.remove('hidden');
-            adOverlay.style.display = 'flex';
-            const viewLoading = document.getElementById('ad-view-loading');
-            const viewFinished = document.getElementById('ad-view-finished');
-            if (viewLoading) viewLoading.style.display = 'none';
-            if (viewFinished) viewFinished.style.display = 'flex';
-        }
+    if (!adOverlay) {
+        adOverlay = document.createElement('div');
+        adOverlay.id = 'scene-ad-overlay';
+        adOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center;";
+        document.body.appendChild(adOverlay);
 
-        // 3. '닫기' 버튼을 누르면 화면이 사라지도록 연결
-        const btnCloseReward = document.getElementById('btn-ad-close');
-        if (btnCloseReward) {
-            btnCloseReward.onclick = () => {
-                adOverlay.style.display = 'none';
-                adOverlay.classList.add('hidden');
-            };
-        }
+        adOverlay.innerHTML = `
+            <div id="ad-view-finished" class="ad-view" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+                <img src="assets/images/icon_coin.png" style="width:5rem; image-rendering: pixelated; margin-bottom:1rem;">
+                <p style="font-size: 2rem; color: #ffd02d; font-family: 'KoreanYNMYTM', sans-serif; margin-bottom:0.5rem; text-shadow: 2px 2px 0px #000;">보상 획득!</p>
+                <p style="font-size: 1.2rem; color: white; margin-bottom:2rem; font-weight:bold;">+${AD_CONFIG.REWARD} 코인</p>
+                <button id="btn-ad-close" class="pixelbtn pixelbtn--primary" style="font-size: 1.2rem; padding: 10px 40px;">닫기</button>
+            </div>
+        `;
+    } else {
+        adOverlay.classList.remove('hidden');
+        adOverlay.style.display = 'flex';
+        const viewLoading = document.getElementById('ad-view-loading');
+        const viewFinished = document.getElementById('ad-view-finished');
+        if (viewLoading) viewLoading.style.display = 'none';
+        if (viewFinished) viewFinished.style.display = 'flex';
+    }
+
+    // '닫기' 버튼을 누르면 화면이 사라지도록 연결
+    const btnCloseReward = document.getElementById('btn-ad-close');
+    if (btnCloseReward) {
+        btnCloseReward.onclick = () => {
+            adOverlay.style.display = 'none';
+            adOverlay.classList.add('hidden');
+        };
     }
 };
 
@@ -3010,8 +3024,39 @@ function setCoins(amount) {
 }
 
 // [6. 이벤트 리스너]
-
 document.addEventListener('DOMContentLoaded', () => {
+
+    // 코인 부족 모달 제어
+    const sceneCoinShortage = document.getElementById('scene-coin-shortage');
+    const btnShortageCancel = document.getElementById('btn-shortage-cancel');
+    const btnShortageWatchAd = document.getElementById('btn-shortage-watch-ad');
+
+    // 어디서든 부를 수 있게 전역 함수로 설정
+    window.showCoinShortageModal = function() {
+        const adData = getAdData(); // 만들어두었던 횟수 조회 함수 호출
+        const adCountDisplay = document.getElementById('ad-count-display');
+        
+        if (adCountDisplay) {
+            // 현재 시청 횟수와 최대 제한 횟수(10회)를 화면에 반영
+            adCountDisplay.innerText = `(${adData.count}/${AD_CONFIG.DAILY_LIMIT} 시청 완료)`;
+        }
+        
+        if (sceneCoinShortage) sceneCoinShortage.classList.remove('hidden');
+    };
+
+    if (btnShortageCancel) {
+        btnShortageCancel.onclick = () => {
+            sceneCoinShortage.classList.add('hidden');
+        };
+    }
+
+    if (btnShortageWatchAd) {
+        btnShortageWatchAd.onclick = () => {
+            sceneCoinShortage.classList.add('hidden'); // 모달을 닫고
+            watchAdAndGetReward(); // 곧바로 광고 실행!
+        };
+    }
+
     // 💡 페이지 로드 시 로그인 결과 확인
     firebase.auth().getRedirectResult()
         .then((result) => {
@@ -3152,6 +3197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("❌ 디버그 인원 수정 실패:", error);
         }
     };
+
     // [리팩토링] 여러 곳에 분산된 디버그 버튼 리스너를 상위 컨테이너(#app-container) 하나로 통합하여 코드 중복을 줄이고 관리를 용이하게 합니다.
     document.getElementById('app-container').addEventListener('click', handleDebugBotAction);
     const handleBotControlAction = async (e) => {
@@ -3800,7 +3846,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnPauseToggle) btnPauseToggle.onclick = togglePause;
     if (btnResumeGame) btnResumeGame.onclick = togglePause;
 
-    if (btnSingle) btnSingle.onclick = () => enterGameScene('single');
+    if (btnSingle) {
+        btnSingle.onclick = () => {
+            const cost = 1;
+            const currentCoins = currentUser ? currentUser.coins : guestCoins;
+            
+            if (currentCoins < cost) {
+                window.showCoinShortageModal(); // 코인이 없으면 바로 광고 모달 띄우기
+            } else {
+                enterGameScene('single'); // 코인이 있으면 게임 대기 화면으로 입장
+            }
+        };
+    }
 
     if (btnRaceStart) {
         btnRaceStart.onclick = () => {
@@ -3945,6 +4002,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.resetAdCount = resetAdCount; // [테스트용] 광고 시청횟수
     window.resetRoomData = resetRoomData;// [테스트용] 룸데이터 초기화(모집중)
     window.setCoins = setCoins; // [테스트용] 개발용 코인 설정 함수 전역 등록
+
+    // 로그아웃 버튼 이벤트 리스너 (HTML의 id="btn-logout"과 정확히 연결)
+    if (btnLogout) {
+        btnLogout.onclick = () => {
+            console.log("👋 로그아웃 시도 중...");
+            firebase.auth().signOut().then(() => {
+                alert("로그아웃 되었습니다.");
+                location.reload(); // 깔끔하게 새로고침
+            }).catch((error) => {
+                console.error('❌ 로그아웃 실패:', error);
+                alert("로그아웃 중 오류 발생: " + error.message);
+            });
+        };
+    }
 });
 
 /**
@@ -4112,21 +4183,5 @@ firebase.auth().onAuthStateChanged((user) => {
         // 💡 [신규 추가] 로그아웃(게스트) 상태가 최종 확정되었을 때 안전하게 방 목록을 호출합니다.
         roomFetchPromise = null;
         fetchRaceRooms(false);
-    }
-});
-
-// 로그아웃 버튼 이벤트 리스너 (HTML의 id="btn-logout"과 정확히 연결)
-document.addEventListener('DOMContentLoaded', () => {
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-        btnLogout.addEventListener('click', () => {
-            console.log("👋 로그아웃 시도 중...");
-            firebase.auth().signOut().then(() => {
-                alert("로그아웃 되었습니다.");
-                location.reload(); // 깔끔하게 새로고침
-            }).catch((error) => {
-                alert("로그아웃 중 오류 발생: " + error.message);
-            });
-        });
     }
 });
