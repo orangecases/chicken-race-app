@@ -440,17 +440,19 @@ body::before{
     top: 1rem;
     left: 0.75rem;
     border-radius: 2rem;
-    border: solid 0.125rem #2e4b5f;
-    padding: 0.25rem 0.75rem 0.35rem 1.75rem;
-    background-color: #244155;
-    background-image: url(../assets/images/ico128-close.png);
-    background-size: 0.75rem;
+    border: solid 0.125rem #3c1f23;
+    padding: 0.25rem 0.75rem 0.35rem 1.5rem;
+    background-color: #f4ba59;
+    background-image: url(../assets/images/ico128-close-color.png);
+    background-size: 0.65rem;
     background-repeat: no-repeat;
-    background-position: 0.75rem 0.55rem;
+    background-position: 0.65rem 0.55rem;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    color: white;
-    font-size: 0.875rem;
+    color: #621a1c;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: inset 0px 2px 0px 0px #f4e67d;
 }
 .btn-delete-from-list {
     all: unset;
@@ -700,7 +702,7 @@ body::before{
     justify-content: center;
     color: #939393;
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     padding: 1rem;
     border-bottom: 0.125rem solid #383838;
     background: #3a413f;
