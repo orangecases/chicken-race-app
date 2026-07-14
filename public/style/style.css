@@ -33,6 +33,17 @@
     margin: 0; padding: 0; box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
     font-family: 'Noto Sans KR', sans-serif;
+    /* 텍스트 선택 및 길게 누르기 완벽 방지 */
+    -webkit-touch-callout: none; /* iOS Safari 화면 꾹 누를 때 뜨는 팝업 메뉴 방지 */
+    -webkit-user-select: none;   /* iOS Safari 텍스트 드래그 선택 방지 */
+    -khtml-user-select: none;    /* 구형 웹킷 브라우저 */
+    -moz-user-select: none;      /* Firefox */
+    -ms-user-select: none;       /* IE/Edge */
+    user-select: none;           /* 표준 문법 */
+}
+input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
 }
 
 html, body {
@@ -225,7 +236,7 @@ body::before{
     justify-content: flex-start;
     align-items: flex-start;
     pointer-events: none;
-    z-index: 10;s
+    z-index: 10;
 }
 
 .hud-score, .hud-rank, .hud-level {
