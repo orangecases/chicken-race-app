@@ -1483,6 +1483,13 @@ async function fetchMyRooms() {
                     if (index > -1) {
                         myRooms.splice(index, 1);
                     }
+                    // 💡 [신규 추가] 서버에서 방이 강제 삭제되었다면, 내 유저 데이터의 찌꺼기 기록도 함께 청소합니다!
+                    if (currentUser && currentUser.joinedRooms && currentUser.joinedRooms[roomId]) {
+                        delete currentUser.joinedRooms[roomId];
+                        db.collection("users").doc(currentUser.id).update({
+                            [`joinedRooms.${roomId}`]: firebase.firestore.FieldValue.delete()
+                        }).catch(e => console.warn("찌꺼기 방 삭제 실패:", e));
+                    }
                 }
                 myRooms.sort((a, b) => {
                     const timeA = a.createdAt?.toMillis() || 0;
@@ -1743,6 +1750,10 @@ async function performServerExit(roomId, isFullExit) {
 
                     const newPlayerCount = roomData.currentPlayers - 1;
                     if (newPlayerCount <= 0) {
+                        // 💡 [수정] 방이 텅 비어서 폭파될 때, 하위 참가자(봇 포함) 데이터도 함께 싹 지워줍니다!
+                        participantsSnapshot.docs.forEach(doc => {
+                            transaction.delete(doc.ref);
+                        });
                         transaction.delete(roomRef);
                     } else {
                         const updates = { currentPlayers: firebase.firestore.FieldValue.increment(-1) };
