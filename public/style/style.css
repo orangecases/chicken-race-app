@@ -1112,7 +1112,7 @@ body::before{
     width: 1rem;
 }
 
-.input-group input[type="text"], .input-group input[type="password"], .input-group select {
+.input-group input[type="text"], .input-group input[type="tel"], .input-group input[type="password"], .input-group select {
     width: 100%; padding: 0.75rem; border: none; color: #000000; font-size: 1rem;}
 
 /* [수정] 주황색 테마 모달의 Range Input 커스텀 스타일 */
