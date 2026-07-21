@@ -2197,6 +2197,25 @@ function renderRaceRoomList() {
 
         raceLi.onclick = (e) => {
             if (e.target.closest('.debug-btn')) return;
+
+            // 💡 1. 로그인 여부 먼저 확인 (로그인 안 했으면 알아서 로그인 안내 창이 뜹니다)
+            if (!isLoggedIn) {
+                attemptToJoinRoom(room);
+                return;
+            }
+
+            // 💡 2. 이미 입장료를 지불하고 참여 중인 방인지 확인 (참여 중이면 코인 불필요)
+            const userRoomState = (currentUser && currentUser.joinedRooms) ? currentUser.joinedRooms[room.id] : null;
+            const hasJoined = !!userRoomState;
+
+            // 💡 3. 처음 들어가는 방인데 코인이 부족할 경우 -> 비번 묻기 전에 바로 광고 모달 호출!
+            const cost = 2; // 멀티게임 입장료
+            if (!hasJoined && currentUser.coins < cost) {
+                window.showCoinShortageModal();
+                return; // 여기서 멈춤 (비번창 띄우지 않음)
+            }
+
+            // 💡 4. 모든 관문을 통과했다면 기존 로직(비번창 띄우기 or 바로 입장) 진행
             if (room.isLocked && !unlockedRoomIds.includes(room.id)) {
                 showPasswordInput(room);
             } else {
@@ -3717,7 +3736,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const attempts = parseInt(attemptsInput) || 3;
             const cost = 2; // 💡 [기획] 멀티 입장료 2코인 고정
             if (currentUser.coins < cost) {
-                alert(`코인이 부족합니다. (필요: ${cost}, 보유: ${currentUser.coins})`);
+                window.showCoinShortageModal(); // 💡 얼럿 대신 광고 모달 띄우기
                 return;
             }
 
@@ -3794,7 +3813,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const cost = 2;
             if (!currentUser || currentUser.coins < cost) {
-                alert(`코인이 부족합니다.\n(필요: ${cost}, 보유: ${currentUser ? currentUser.coins : 0})`);
+                if (scenePasswordInput) scenePasswordInput.classList.add('hidden'); // 💡 켜져 있던 비번창 닫기
+                window.showCoinShortageModal(); // 💡 얼럿 대신 광고 모달 띄우기
                 return;
             }
 
