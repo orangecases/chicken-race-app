@@ -2431,8 +2431,20 @@ async function enterGameScene(mode, roomData = null) {
         setControlsVisibility(false);
         drawStaticFrame();
         document.getElementById('game-start-screen').classList.remove('hidden');
-        startAutoActionTimer(15, 'exit', '#game-start-screen .time-message');
-        renderMultiRanking(); 
+
+        // 💡 방을 만든 사람(방장)이 아직 게임을 한 번도 안 했다면 타이머 면제!
+        const isHost = currentRoom && currentUser && currentRoom.creatorUid === currentUser.id;
+        const usedAttempts = (currentUser && currentUser.joinedRooms[currentRoom.id]) ? currentUser.joinedRooms[currentRoom.id].usedAttempts : 0;
+        
+        if (isHost && usedAttempts === 0) {
+            const timeMsgEl = document.querySelector('#game-start-screen .time-message');
+            if (timeMsgEl) timeMsgEl.style.display = 'none'; // 타이머 글씨 숨김
+        } else {
+            // 방장이 아니거나 방장이어도 이미 한 판 했다면 정상적으로 15초 타이머 작동
+            startAutoActionTimer(15, 'exit', '#game-start-screen .time-message');
+        }
+        
+        renderMultiRanking();
     } else { 
         resetGame();
         setControlsVisibility(false);
@@ -3854,14 +3866,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnSingle) {
         btnSingle.onclick = () => {
-            const cost = 1;
-            const currentCoins = currentUser ? currentUser.coins : guestCoins;
-            
-            if (currentCoins < cost) {
-                window.showCoinShortageModal(); // 코인이 없으면 바로 광고 모달 띄우기
-            } else {
-                enterGameScene('single'); // 코인이 있으면 게임 대기 화면으로 입장
-            }
+            // 💡 [수정] 코인 개수와 무관하게 일단 싱글 모드 대기실로 입장시킵니다.
+            // (대기실 안의 '시작' 버튼을 누를 때 코인 검사 & 광고 모달이 알아서 작동합니다!)
+            enterGameScene('single'); 
         };
     }
 
