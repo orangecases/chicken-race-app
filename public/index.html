@@ -64,7 +64,7 @@
 
                 <div class="input-group">
                     <label>비밀번호</label>
-                    <input type="text" id="input-room-password-create" placeholder="공개" maxlength="10">
+                    <input type="tel" id="input-room-password-create" placeholder="공개 (숫자만)" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                 </div>
                 
                 <!-- <div class="input-group">
