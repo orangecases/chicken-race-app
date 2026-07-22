@@ -735,25 +735,43 @@ function showCoinFloatingAnimation(rank) {
 }
 
 /**
- * [신규] Firebase Firestore에 점수 저장
+ *  Firebase Firestore에 점수 저장
  */
 function saveScoreToFirebase(finalScore) {
     const userNickname = (currentUser && currentUser.nickname) ? currentUser.nickname : "지나가던 병아리";
     const uid = (currentUser && currentUser.id) ? currentUser.id : null;
 
-    // Firebase Firestore에 데이터 저장하기
-    db.collection("rankings").add({
-        uid: uid,
-        nickname: userNickname,
-        score: finalScore,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp() // 서버 시간 기록
-    })
-        .then((docRef) => {
-            console.log("✅ 점수가 서버에 기록되었습니다! ID:", docRef.id);
-        })
-        .catch((error) => {
-            console.error("❌ 점수 저장 실패:", error);
-        });
+    // 게스트 유저는 글로벌 랭킹에 저장하지 않음
+    if (!uid) {
+        console.log("⚠️ 게스트 기록은 글로벌 랭킹에 등록되지 않습니다.");
+        return;
+    }
+
+    const rankRef = db.collection("rankings").doc(uid); // 고유 ID(uid)로 덮어쓰기 설정
+
+    rankRef.get().then((doc) => {
+        if (doc.exists) {
+            const currentBest = doc.data().score || 0;
+            // 기존 점수보다 높을 때만 갱신
+            if (finalScore > currentBest) {
+                rankRef.update({
+                    nickname: userNickname,
+                    score: finalScore,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => console.log("✅ 최고 점수가 랭킹에 갱신되었습니다!"));
+            }
+        } else {
+            // 기록이 아예 없으면 새로 생성
+            rankRef.set({
+                uid: uid,
+                nickname: userNickname,
+                score: finalScore,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => console.log("✅ 랭킹에 새 기록이 등록되었습니다!"));
+        }
+    }).catch((error) => {
+        console.error("❌ 랭킹 점수 저장 실패:", error);
+    });
 }
 
 function handleGameOverUI() {
@@ -1282,12 +1300,28 @@ async function fetchNicknames(uids) {
  * [신규] 서버 랭킹 데이터를 화면에 표시
  */
 async function displayRankings(rankData) {
-    const uids = rankData.filter(data => data.uid).map(data => data.uid);
-    const uniqueUids = [...new Set(uids)]; // 중복된 UID 제거
+    // 💡 [중복 필터링] 동일한 UID를 가진 기존의 과거 기록들이 있다면 가장 높은 점수 하나만 걸러냅니다.
+    const uniqueRankData = [];
+    const seenUids = new Set();
+
+    rankData.forEach(data => {
+        if (data.uid) {
+            if (!seenUids.has(data.uid)) {
+                seenUids.add(data.uid);
+                uniqueRankData.push(data);
+            }
+        } else {
+            // UID가 없는 게스트 기록(혹시 있다면) 그대로 표시
+            uniqueRankData.push(data);
+        }
+    });
+
+    const uids = uniqueRankData.filter(data => data.uid).map(data => data.uid);
+    const uniqueUids = [...new Set(uids)];
 
     const nicknameMap = {};
 
-    // 💡 핵심: Cloud Function을 거치지 않고 직접 Firestore에서 닉네임들을 병렬로 가져옵니다.
+    // 직접 Firestore에서 닉네임들을 병렬로 가져옵니다.
     try {
         await Promise.all(uniqueUids.map(async (uid) => {
             const userDoc = await db.collection("users").doc(uid).get();
@@ -1299,10 +1333,10 @@ async function displayRankings(rankData) {
         console.warn("⚠️ 일부 닉네임을 최신화하지 못했습니다:", err);
     }
 
-    top100Scores = rankData.map((data, index) => ({
+    // 💡 필터링된 배열(uniqueRankData)을 기준으로 등수를 다시 매깁니다.
+    top100Scores = uniqueRankData.map((data, index) => ({
         rank: index + 1,
         score: data.score,
-        // Firestore에서 가져온 최신 닉네임이 있으면 쓰고, 없으면 기록 당시의 닉네임을 사용합니다.
         name: (data.uid && nicknameMap[data.uid]) || data.nickname || '지나가던 병아리'
     }));
     
