@@ -3,6 +3,12 @@
  */
 
 // [1. 전역 변수 및 게임 설정]
+
+// 💡 안드로이드 상태표시줄 방어용 여백 변수 설정
+if (window.AndroidBridge) {
+    document.documentElement.style.setProperty('--android-safe-area', '2.2rem'); 
+}
+
 // 💡 안드로이드 & iOS 통합 네이티브 통신 브릿지 (전역 함수)
 window.invokeNativeApp = function(action, data = null) {
     // 1. 안드로이드 (AndroidBridge) 호출
@@ -74,6 +80,8 @@ let allRoomsLoaded = false;    // 모든 방을 다 불러왔는지 여부 (더�
 let myRooms = [];              // [신규] 참가중인 방 목록 데이터 별도 저장
 let unsubscribeMyRoomsListeners = []; // [신규] '내 방' 목록 실시간 리스너 해제 함수 배열
 let lastJoinedRoomIdsJSON = ''; // [신규] 참가중인 방 목록 변경 감지용 변수
+
+
 
 // [신규] 광고 시스템 설정
 const AD_CONFIG = {

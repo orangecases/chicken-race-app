@@ -55,12 +55,13 @@ html, body {
 html, body small{font-size: 70%;}
 
 body{
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: #000000;
 }
 body::before{
     content: "";
     position: absolute;
-    top: 0;
+    /* [수정] 블러 처리된 배경 이미지도 까만색 영역(안드로이드 여백) 아래부터 시작하도록 내립니다. */
+    top: var(--android-safe-area, 0px); 
     left: 0;
     right: 0;
     bottom: 0;
@@ -76,8 +77,11 @@ body::before{
     position: relative;
     width: 100%;
     max-width: 30rem; /* 기준 디자인 너비 78rem 대응 */
-    height: 100%;
-    margin: 0 auto;
+    
+    /* [신규/수정] 안드로이드일 때 앱 전체를 아래로 내리고, 그만큼 삐져나가지 않도록 높이를 재계산합니다. */
+    margin-top: var(--android-safe-area, 0px); 
+    height: calc(100% - var(--android-safe-area, 0px)); 
+    
     display: flex;
     flex-direction: column;
     background-color: #3a413f;
