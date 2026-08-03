@@ -77,7 +77,7 @@ let lastJoinedRoomIdsJSON = ''; // [신규] 참가중인 방 목록 변경 감�
 
 // [신규] 광고 시스템 설정
 const AD_CONFIG = {
-    REWARD: 5,      // 1회당 지급 코인
+    REWARD: 10,      // 1회당 지급 코인
     DAILY_LIMIT: 10, // 일일 최대 시청 횟수
     DURATION: 10000  // [신규] 광고 시청 시간 (10초, ms 단위)
 };
