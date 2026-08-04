@@ -5,7 +5,8 @@
 // [1. 전역 변수 및 게임 설정]
 
 // 💡 안드로이드 상태표시줄 방어용 여백 변수 설정
-if (window.AndroidBridge || /Android/i.test(navigator.userAgent)) {
+
+if (window.AndroidBridge) {
     document.documentElement.style.setProperty('--android-safe-area', '35px'); // 상태표시줄 높이만큼 강제 여백
 }
 
