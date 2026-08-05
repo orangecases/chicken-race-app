@@ -282,7 +282,7 @@ body::before {
 /* [신규] 공통 UI 아이콘 버튼 (멤버, 사운드, 일시정지 등) */
 .ui-icon-btn {
     position: absolute;
-    top: 2rem; /* [수정] 펀치홀 방어를 위해 2rem으로 통일 */
+    top: 0.85rem; /* [수정] 펀치홀 방어를 위해 2rem으로 통일 */
     display: block;
     background-color: transparent;
     border: none;
@@ -310,23 +310,23 @@ body::before {
 
 /* 사운드 버튼 */
 .ui-icon-btn.--effect {
-    left: 4%;
-    right: 4cqw;
+    right: 13%;
+    right: 13cqw;
 }
 .ui-icon-btn.--effect.effect-on { background-image: url('../assets/images/icon_sound_on.png'); }
 .ui-icon-btn.--effect.effect-off { background-image: url('../assets/images/icon_sound_off.png'); }
 
 .ui-icon-btn.--bgm {
-    right: 13%;
-    right: 13cqw;
+    right: 3%;
+    right: 3cqw;
 }
 .ui-icon-btn.--bgm.bgm-on { background-image: url('../assets/images/icon_bgm_on.png'); }
 .ui-icon-btn.--bgm.bgm-off { background-image: url('../assets/images/icon_bgm_off.png'); }
 
 /* 일시정지 버튼 */
 .ui-icon-btn.--pause {
-    right: 22%;
-    right: 22cqw; /* 사운드 버튼 왼쪽에 위치 */
+    right: 13%;
+    right: 13cqw; /* 사운드 버튼 왼쪽에 위치 */
     background-image: url('../assets/images/icon_pause.png');
 }
 /* (참고) 일시정지 토글 기능 구현 시 사용할 수 있는 스타일 */
