@@ -495,7 +495,7 @@ body::before {
 .coin-stat {
     all: unset;
     position: absolute;
-    top: 0.75rem;
+    top: 1rem;
     right: 4%;
     right: 4cqw;
     display: flex;
