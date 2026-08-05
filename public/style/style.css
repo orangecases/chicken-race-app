@@ -246,6 +246,7 @@ body::before {
 
 .hud-score, .hud-rank, .hud-level {
     font-family: 'PixelFont', sans-serif;
+    font-size: 1.5rem;
     font-size: 7.05cqw; 
     line-height: 1;
 }
@@ -268,6 +269,7 @@ body::before {
 
 .score-val {
     font-family: 'PixelFont', sans-serif;
+    font-size: 2rem;
     font-size: 9.05cqw;
 }
 
@@ -280,12 +282,13 @@ body::before {
 /* [신규] 공통 UI 아이콘 버튼 (멤버, 사운드, 일시정지 등) */
 .ui-icon-btn {
     position: absolute;
-    top: 1rem; 
+    top: 2rem; /* [수정] 펀치홀 방어를 위해 2rem으로 통일 */
     display: block;
     background-color: transparent;
     border: none;
     padding: 0;
-    width: 8cqw; /* 컨테이너 너비의 8%로 크기 통일 */
+    width: 2.5rem; /* [신규/안전장치] 구형 기기용 너비 */
+    width: 8cqw;
     max-width: 3rem;
     aspect-ratio: 1 / 1;
     background-size: contain;
@@ -300,18 +303,21 @@ body::before {
 
 /* 멤버 버튼 */
 .ui-icon-btn.--member {
+    left: 4%;
     left: 4cqw;
     background-image: url('../assets/images/icon_member.png');
 }
 
 /* 사운드 버튼 */
 .ui-icon-btn.--effect {
+    left: 4%;
     right: 4cqw;
 }
 .ui-icon-btn.--effect.effect-on { background-image: url('../assets/images/icon_sound_on.png'); }
 .ui-icon-btn.--effect.effect-off { background-image: url('../assets/images/icon_sound_off.png'); }
 
 .ui-icon-btn.--bgm {
+    right: 13%;
     right: 13cqw;
 }
 .ui-icon-btn.--bgm.bgm-on { background-image: url('../assets/images/icon_bgm_on.png'); }
@@ -319,6 +325,7 @@ body::before {
 
 /* 일시정지 버튼 */
 .ui-icon-btn.--pause {
+    right: 22%;
     right: 22cqw; /* 사운드 버튼 왼쪽에 위치 */
     background-image: url('../assets/images/icon_pause.png');
 }
@@ -488,7 +495,8 @@ body::before {
 .coin-stat {
     all: unset;
     position: absolute;
-    top: 3.5cqw;
+    top: 2rem;
+    right: 4%;
     right: 4cqw;
     display: flex;
     align-items: center;
