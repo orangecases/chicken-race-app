@@ -460,7 +460,7 @@ body::before {
 .btn-close-to-home {
     all: unset;
     position: absolute;
-    top: 1rem;
+    top: 1.75rem;
     left: 0.75rem;
     border-radius: 2rem;
     border: solid 0.125rem #3c1f23;
@@ -495,7 +495,7 @@ body::before {
 .coin-stat {
     all: unset;
     position: absolute;
-    top: 2rem;
+    top: 1.75rem;
     right: 4%;
     right: 4cqw;
     display: flex;
