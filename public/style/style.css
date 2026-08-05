@@ -57,10 +57,9 @@ body{
     background-color: #000000;
 }
 body::before {
-    content: "";
+content: "";
     position: absolute;
-    /* [수정] 블러 처리된 배경 이미지도 까만색 영역(안드로이드 여백) 아래부터 시작하도록 내립니다. */
-    top: var(--android-safe-area, 0px); 
+    top: 0; /* [수정] 아래로 밀어내던 var(--android-safe-area) 제거 */
     left: 0;
     right: 0;
     bottom: 0;
@@ -73,15 +72,11 @@ body::before {
 }
 
 #app-container {
-    position: relative;
+position: relative;
     width: 100%;
     max-width: 30rem; /* 기준 디자인 너비 78rem 대응 */
-    
-    /* [수정] 안드로이드일 때 앱 전체를 아래로 내리고, 삐져나가지 않도록 전체 높이를 다시 계산합니다. */
-    margin-top: var(--android-safe-area, 0px); 
-    height: calc(100% - var(--android-safe-area, 0px)); 
-    
-    margin-inline: auto; /* margin: 0 auto; 와 동일하게 중앙 정렬 유지 */
+    margin: 0 auto; /* [수정] 중앙 정렬 복구하고 margin-top 제거 */
+    height: 100%; /* [수정] 높이 계산식 제거하고 화면 꽉 차게 100%로 복구 */
     display: flex;
     flex-direction: column;
     background-color: #3a413f;
