@@ -282,7 +282,7 @@ body::before {
 /* [신규] 공통 UI 아이콘 버튼 (멤버, 사운드, 일시정지 등) */
 .ui-icon-btn {
     position: absolute;
-    top: 0.85rem; /* [수정] 펀치홀 방어를 위해 2rem으로 통일 */
+    top: 1rem; /* [수정] 펀치홀 방어를 위해 2rem으로 통일 */
     display: block;
     background-color: transparent;
     border: none;
@@ -325,8 +325,8 @@ body::before {
 
 /* 일시정지 버튼 */
 .ui-icon-btn.--pause {
-    right: 13%;
-    right: 13cqw; /* 사운드 버튼 왼쪽에 위치 */
+    right: 24%;
+    right: 24cqw; /* 사운드 버튼 왼쪽에 위치 */
     background-image: url('../assets/images/icon_pause.png');
 }
 /* (참고) 일시정지 토글 기능 구현 시 사용할 수 있는 스타일 */
@@ -460,7 +460,7 @@ body::before {
 .btn-close-to-home {
     all: unset;
     position: absolute;
-    top: 1.75rem;
+    top: 1rem;
     left: 0.75rem;
     border-radius: 2rem;
     border: solid 0.125rem #3c1f23;
@@ -495,7 +495,7 @@ body::before {
 .coin-stat {
     all: unset;
     position: absolute;
-    top: 1.75rem;
+    top: 0.75rem;
     right: 4%;
     right: 4cqw;
     display: flex;
