@@ -4,12 +4,6 @@
 
 // [1. 전역 변수 및 게임 설정]
 
-// 💡 안드로이드 상태표시줄 방어용 여백 변수 설정
-
-if (window.AndroidBridge) {
-    document.documentElement.style.setProperty('--android-safe-area', '35px'); // 상태표시줄 높이만큼 강제 여백
-}
-
 // 💡 안드로이드 & iOS 통합 네이티브 통신 브릿지 (전역 함수)
 window.invokeNativeApp = function(action, data = null) {
     // 1. 안드로이드 (AndroidBridge) 호출
@@ -30,7 +24,7 @@ window.invokeNativeApp = function(action, data = null) {
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 1248;
-const GAME_HEIGHT = 880;
+const GAME_HEIGHT = 984;
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
@@ -160,7 +154,7 @@ class ScrollingBackground {
         ctx.drawImage(img, this.x + this.width, yPosition, this.width + 2, this.height);
     }
 }
-const skyBg = new ScrollingBackground('sky', 0.2, 1248, 756);
+const skyBg = new ScrollingBackground('sky', 0.2, 1248, 860);
 const floorBg = new ScrollingBackground('floor', 1.0, 1248, 124);
 
 const chicken = {
