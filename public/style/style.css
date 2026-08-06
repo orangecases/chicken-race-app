@@ -231,7 +231,7 @@ position: relative;
     width: 100%;
     height: 100%;
     padding: 3% 3%;
-    padding-top: 3rem;
+    padding-top: 2.5rem;
     display: flex;
     justify-content: flex-start;
     align-items: flex-start;
@@ -277,7 +277,7 @@ position: relative;
 /* [신규] 공통 UI 아이콘 버튼 (멤버, 사운드, 일시정지 등) */
 .ui-icon-btn {
     position: absolute;
-    top: 3rem; /* [수정] 펀치홀 방어를 위해 2rem으로 통일 */
+    top: 3.5rem; /* [수정] 펀치홀 방어를 위해 2rem으로 통일 */
     display: block;
     background-color: transparent;
     border: none;
@@ -454,7 +454,7 @@ position: relative;
 .btn-close-to-home {
     all: unset;
     position: absolute;
-    top: 3rem;
+    top: 3.5rem;
     left: 0.75rem;
     border-radius: 2rem;
     border: solid 0.125rem #3c1f23;
@@ -489,7 +489,7 @@ position: relative;
 .coin-stat {
     all: unset;
     position: absolute;
-    top: 3rem;
+    top: 3.5rem;
     right: 4%;
     right: 4cqw;
     display: flex;
