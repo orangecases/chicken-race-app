@@ -3129,6 +3129,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sceneCoinShortage) sceneCoinShortage.classList.remove('hidden');
     };
 
+    // 👇 [신규 추가] 화면 상단의 코인 표시(.coin-stat) 영역을 클릭했을 때 모달 띄우기
+    document.querySelectorAll('.coin-stat').forEach(coinBtn => {
+        coinBtn.style.cursor = 'pointer';
+        coinBtn.addEventListener('click', () => {
+            // 코인이 부족해서 강제로 띄우는 것이 아니므로 false를 전달하여 "코인이 부족합니다!" 경고를 숨깁니다.
+            window.showCoinShortageModal(false);
+        });
+    });
+
     if (btnShortageCancel) {
         btnShortageCancel.onclick = () => {
             sceneCoinShortage.classList.add('hidden');
