@@ -508,7 +508,7 @@ position: relative;
    ========================================= */
 #control-container {
     position: absolute;
-    bottom: 0;
+    bottom: env(safe-area-inset-bottom, 0px);
     left: 0;
     width: 100%;
     
