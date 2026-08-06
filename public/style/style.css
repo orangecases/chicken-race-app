@@ -1070,9 +1070,24 @@ position: relative;
     background-color: #71aac6; 
 }
 
-.modal-body .coin {
+.modal-body .coin_asset {
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-content: center;
+    gap: 0.25rem;
+}
+.modal-body .coin_asset .coin {
     width: 3rem;
-    margin: auto;
+}
+.coin_asset .coin_asset .x-mark {
+    font-size: 1.5rem;
+}
+.modal-body .coin_asset .number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    font-family: 'KoreanYNMYTM', sans-serif;
 }
 
 .modal-body small { 
@@ -1207,6 +1222,7 @@ position: relative;
     font-size: 0.875rem;
     text-align: center;
 }
+
 .auth-message::before {
     content: '※';
 }

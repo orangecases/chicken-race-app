@@ -438,14 +438,16 @@ function handleObstacles() {
  * 프로필 모달, 게임 오버레이(시작/일시정지/종료)의 코인 수치를 동기화합니다.
  */
 function updateCoinUI() {
-    // [수정] 로그인 여부에 따라 코인 표시 (게스트 코인 지원)
+    // 로그인 여부에 따라 코인 표시 (게스트 코인 지원)
     const coinVal = currentUser ? currentUser.coins : guestCoins;
     if (document.getElementById('profile-coin-count')) document.getElementById('profile-coin-count').innerText = coinVal;
     document.querySelectorAll('.coin-stat strong').forEach(el => {
         el.innerText = coinVal;
     });
-    // [신규] 코인 변동 시 유저 정보 저장 (영속성 유지)
-    // [신규] 광고 버튼 텍스트 업데이트 (남은 횟수 표시)
+    const modalCoinCount = document.getElementById('modal-current-coin');
+    if (modalCoinCount) modalCoinCount.innerText = coinVal;
+    // 코인 변동 시 유저 정보 저장 (영속성 유지)
+    // 광고 버튼 텍스트 업데이트 (남은 횟수 표시)
     const btnRecharge = document.getElementById('btn-recharge-coin');
     if (btnRecharge) {
         const adData = getAdData();
@@ -3106,12 +3108,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnShortageWatchAd = document.getElementById('btn-shortage-watch-ad');
 
     // 어디서든 부를 수 있게 전역 함수로 설정
-    window.showCoinShortageModal = function() {
-        const adData = getAdData(); // 만들어두었던 횟수 조회 함수 호출
+    window.showCoinShortageModal = function(isShortage = true) {
+        const adData = getAdData(); 
         const adCountDisplay = document.getElementById('ad-count-display');
+        const noticeMsg = document.getElementById('modal-notice-msg');
         
+        // 상황에 따라 문구 변경
+        if (noticeMsg) {
+            if (isShortage) {
+                noticeMsg.innerHTML = '코인이 부족합니다!<br>광고를 시청하고 코인을 충전하세요!';
+            } else {
+                noticeMsg.innerHTML = '광고를 시청하고 코인을 충전하세요!';
+            }
+        }
+
         if (adCountDisplay) {
-            // 현재 시청 횟수와 최대 제한 횟수(10회)를 화면에 반영
             adCountDisplay.innerText = `(${adData.count}/${AD_CONFIG.DAILY_LIMIT} 시청 완료)`;
         }
         
@@ -3129,6 +3140,15 @@ document.addEventListener('DOMContentLoaded', () => {
             sceneCoinShortage.classList.add('hidden'); // 모달을 닫고
             watchAdAndGetReward(); // 곧바로 광고 실행!
         };
+    }
+
+    // 👇 [신규 코드 추가] 메인 화면 우측 상단의 코인 버튼(coin-stat) 클릭 이벤트 연결
+    const coinStatBtn = document.querySelector('.coin-stat');
+    if (coinStatBtn) {
+        coinStatBtn.addEventListener('click', () => {
+            // 코인이 부족해서 연 것이 아니므로 false를 전달하여 경고 문구를 바꿉니다.
+            window.showCoinShortageModal(false); 
+        });
     }
 
     // 💡 페이지 로드 시 로그인 결과 확인
@@ -3681,6 +3701,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnCreateOpen) {
         btnCreateOpen.onclick = () => {
+            // 1. 로그인 여부 먼저 확인
             if (!isLoggedIn) {
                 if (sceneAuth) {
                     sceneAuth.classList.remove('hidden');
@@ -3693,7 +3714,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 🟢 방 만들기 창을 열 때마다 랜덤으로 제목 하나를 뽑습니다.
+            // 👇 [신규 추가] 2. 코인이 충분한지 '미리' 검사합니다.
+            const cost = 2; // 방 만들기 비용 (2코인)
+            if (currentUser.coins < cost) {
+                // 코인이 부족하면 방 만들기 모달 대신 코인 충전 모달을 띄우고 여기서 멈춥니다(return).
+                window.showCoinShortageModal();
+                return; 
+            }
+
+            // 3. 코인이 충분하다면 정상적으로 방 만들기 모달을 띄웁니다.
             currentRandomTitle = funRoomTitles[Math.floor(Math.random() * funRoomTitles.length)];
             
             const titleInputEl = document.getElementById('input-room-title');
