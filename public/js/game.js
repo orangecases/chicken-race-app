@@ -2493,13 +2493,16 @@ async function enterGameScene(mode, roomData = null) {
         // 💡 방을 만든 사람(방장)이 아직 게임을 한 번도 안 했다면 타이머 면제!
         const isHost = currentRoom && currentUser && currentRoom.creatorUid === currentUser.id;
         const usedAttempts = (currentUser && currentUser.joinedRooms[currentRoom.id]) ? currentUser.joinedRooms[currentRoom.id].usedAttempts : 0;
-        
+        const btnShare = document.querySelector('.btn-share'); // 👇 [신규 추가] 공유 버튼 요소 찾기
+
         if (isHost && usedAttempts === 0) {
             const timeMsgEl = document.querySelector('#game-start-screen .time-message');
             if (timeMsgEl) timeMsgEl.style.display = 'none'; // 타이머 글씨 숨김
+            if (btnShare) btnShare.style.display = 'block';  // 👇 [신규 추가] 방장 + 첫 판일 때만 버튼 표시!
         } else {
             // 방장이 아니거나 방장이어도 이미 한 판 했다면 정상적으로 15초 타이머 작동
             startAutoActionTimer(15, 'exit', '#game-start-screen .time-message');
+            if (btnShare) btnShare.style.display = 'none';   // 👇 [신규 추가] 그 외의 상황에서는 무조건 버튼 숨김!
         }
         
         renderMultiRanking();
@@ -2886,11 +2889,40 @@ function loginWithGoogle() {
     if (window.AndroidBridge) {
         window.invokeNativeApp('requestGoogleLogin');
     } else {
+        // [수정됨] 로컬 환경 감지 후 팝업과 리다이렉트 분기 처리
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+        
+        if (isLocal) {
+            firebase.auth().signInWithPopup(provider).then(() => {
+                if (window.resetLoginButtons) window.resetLoginButtons();
+            }).catch(err => {
+                console.error("팝업 로그인 에러:", err);
+                if (window.resetLoginButtons) window.resetLoginButtons();
+            });
+        } else {
+            sessionStorage.setItem('pendingLoginProvider', 'google'); 
+            firebase.auth().signInWithRedirect(provider);
+        }
+    }
+}
+
+/**
+ * 구글 로그인 함수 이전(웹브라우저로그인불가) 버전
+
+function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
+
+    if (window.AndroidBridge) {
+        window.invokeNativeApp('requestGoogleLogin');
+    } else {
         // 💡 'google'이라고 명시해서 저장합니다.
         sessionStorage.setItem('pendingLoginProvider', 'google'); 
         firebase.auth().signInWithRedirect(provider);
     }
 }
+ */
 
 /**
  * 애플 로그인
@@ -2901,7 +2933,6 @@ async function loginWithApple() {
     provider.addScope('name');
 
     try {
-        // 💡 'apple'이라고 명시해서 저장합니다.
         sessionStorage.setItem('pendingLoginProvider', 'apple');
         await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         firebase.auth().signInWithRedirect(provider);
@@ -3101,6 +3132,33 @@ function setCoins(amount) {
 
 // [6. 이벤트 리스너]
 document.addEventListener('DOMContentLoaded', () => {
+
+    // 친구 초대하기(기본 공유창) 버튼 클릭 이벤트
+    const btnShare = document.querySelector('.btn-share');
+    if (btnShare) {
+        btnShare.onclick = () => {
+            if (!currentRoom) return;
+            
+            // 💡 앱 미설치 유저를 스토어로 유도하기 위해 기존 home.html 주소를 사용합니다.
+            // (파이어베이스 호스팅 주소 뒤에 ?roomId=방번호 를 붙여서 전송)
+            const landingPageUrl = `https://kitworks-chicken-race.web.app/home.html?roomId=${currentRoom.id}`;
+            const shareText = `[출발! 치킨 레이스]\n친구가 레이스에 초대했습니다!\n방 제목: ${currentRoom.title}\n비밀번호: ${currentRoom.password ? currentRoom.password : '없음'}`;
+            
+            // 스마트폰 기본 공유 창 띄우기 (카카오톡, 문자 등 메신저 자동 지원)
+            if (navigator.share) {
+                navigator.share({
+                    title: '출발! 치킨 레이스',
+                    text: shareText,
+                    url: landingPageUrl 
+                }).catch(console.error);
+            } else {
+                // PC 브라우저 등 기본 공유창을 지원하지 않는 환경을 위한 클립보드 복사(Fallback)
+                navigator.clipboard.writeText(`${shareText}\n링크: ${landingPageUrl}`).then(() => {
+                    alert('초대 링크가 복사되었습니다! 메신저에 붙여넣기(Ctrl+V) 해주세요.');
+                });
+            }
+        };
+    }
 
     // 코인 부족 모달 제어
     const sceneCoinShortage = document.getElementById('scene-coin-shortage');

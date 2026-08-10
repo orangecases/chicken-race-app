@@ -336,8 +336,8 @@ position: relative;
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
-    background: linear-gradient(#283a48, #00000047);
-    background: linear-gradient(#283a48, #2b3e4dcf, #00000047);
+    background: linear-gradient(#283a48, #0000007a);
+    background: linear-gradient(#283a48, #2b3e4dcf, #0000007a);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -360,7 +360,7 @@ position: relative;
 }
 
 .game-overlay-screen h1 {
-    font-size: 3.75rem;
+    font-size: 3.25rem;
     line-height: 1.5rem;
     margin-bottom: 0.5rem;
     color: #beff25;
@@ -398,6 +398,20 @@ position: relative;
 .game-overlay-screen .btn-group{
     display: flex;
     gap: 2%;
+}
+.game-overlay-screen .btn-share {
+    all: unset;
+    border-bottom: solid 1px #ffffff;
+    padding: 0rem 0 0.25rem 1rem;
+    background-image: url(../assets/images/ico128-share.png);
+    background-size: 0.75rem;
+    background-repeat: no-repeat;
+    background-position: 0 0.3rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 600;
 }
 
 #btn-restart {
