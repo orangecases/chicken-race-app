@@ -24,4 +24,23 @@
         </div>
     </div>
 </body>
+<script>
+    // 1. 주소창에서 방 번호(?roomId=...) 낚아채기
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('roomId');
+
+    if (roomId) {
+        // 2. 앱을 깨우는 커스텀 URL 스킴 호출 (예: chickenrace://join?roomId=방번호)
+        const appUrl = `chickenrace://join?roomId=${roomId}`;
+        
+        // 3. 브라우저가 화면을 띄우자마자 즉시 앱 호출 시도
+        window.location.href = appUrl;
+
+        // 4. 안내 문구 살짝 변경
+        const desc = document.querySelector('p');
+        if (desc) {
+            desc.innerHTML = `<strong>초대받은 레이스룸으로 이동 중입니다...</strong><br>만약 앱이 열리지 않는다면 아래 버튼을 눌러 앱을 먼저 설치해 주세요!`;
+        }
+    }
+</script>
 </html>

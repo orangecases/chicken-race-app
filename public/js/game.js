@@ -4205,6 +4205,77 @@ window.onNativeLoginSuccess = function(token) {
         });
 };
 
+/**
+ * 네이티브 앱(안드로이드/iOS)이 딥링크를 타고 켜졌을 때 호출해 줄 수신부
+ * @param {string} roomId - 딥링크에서 추출한 방 고유 ID
+ */
+window.handleDeepLink = async function(roomId) {
+    console.log("🔗 딥링크 수신 완료! 이동할 방 번호:", roomId);
+    
+    if (!roomId) return;
+
+    // 1. 로그인 여부 확인
+    if (!isLoggedIn) {
+        // 비로그인 상태면 방 번호를 임시 기억해두고 로그인 창 띄우기
+        sessionStorage.setItem('pendingDeepLinkRoomId', roomId);
+        const sceneAuth = document.getElementById('scene-auth');
+        if (sceneAuth) {
+            sceneAuth.classList.remove('hidden');
+            const authMsg = sceneAuth.querySelector('.auth-message');
+            if (authMsg) {
+                authMsg.style.display = 'block';
+                authMsg.innerText = '초대받은 방에 입장하려면 로그인이 필요합니다.';
+            }
+        }
+        return;
+    }
+
+    // 2. 로그인되어 있다면 방 정보 조회 후 즉시 입장 시도!
+    try {
+        const roomDoc = await db.collection('rooms').doc(roomId).get();
+        if (roomDoc.exists) {
+            const roomData = mapFirestoreDocToRoom(roomDoc);
+            
+            // 방이 가득 찼거나 종료되었는지 사전 검사
+            if (roomData.status === 'finished') {
+                alert("이미 종료된 레이스룸입니다.");
+                return;
+            }
+            
+            // 비밀번호가 걸려있으면 비번 창으로, 없으면 곧바로 입장!
+            if (roomData.isLocked && !unlockedRoomIds.includes(roomData.id)) {
+                showPasswordInput(roomData);
+            } else {
+                attemptToJoinRoom(roomData);
+            }
+        } else {
+            alert("존재하지 않거나 이미 폭파된 방입니다.");
+        }
+    } catch (e) {
+        console.error("딥링크 방 정보 조회 실패:", e);
+    }
+};
+
+// 💡 [추가 보완] 로그인을 마치고 돌아왔을 때, 기억해둔 딥링크 방이 있으면 마저 이동시킵니다.
+// firebase.auth().onAuthStateChanged 내부의 loadUserData() 호출 바로 아래에 이 로직이 암묵적으로 연결되도록,
+// waitForUserAndShowProfile 함수 끝부분에 살짝 얹어줍니다.
+const originalWaitForUser = window.waitForUserAndShowProfile;
+window.waitForUserAndShowProfile = function() {
+    originalWaitForUser();
+    
+    setTimeout(() => {
+        const pendingRoomId = sessionStorage.getItem('pendingDeepLinkRoomId');
+        if (pendingRoomId && currentUser) {
+            sessionStorage.removeItem('pendingDeepLinkRoomId');
+            // 로그인 완료 후 프로필 창을 닫고 방으로 직행!
+            const sceneUserProfile = document.getElementById('scene-user-profile');
+            if (sceneUserProfile) sceneUserProfile.classList.add('hidden');
+            
+            window.handleDeepLink(pendingRoomId);
+        }
+    }, 500); // 유저 정보가 세팅될 시간을 약간 벌어줍니다.
+};
+
 // [신규] 유저 데이터가 완전히 로드될 때까지 기다렸다가 모달을 띄우는 함수
 window.waitForUserAndShowProfile = function() {
     const checkInterval = setInterval(() => {
