@@ -3139,9 +3139,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btnShare.onclick = () => {
             if (!currentRoom) return;
             
-            // 💡 앱 미설치 유저를 스토어로 유도하기 위해 기존 home.html 주소를 사용합니다.
+            // 💡 앱 미설치 유저를 스토어로 유도하기 위해 기존 landing.html 주소를 사용합니다.
             // (파이어베이스 호스팅 주소 뒤에 ?roomId=방번호 를 붙여서 전송)
-            const landingPageUrl = `https://kitworks-chicken-race.web.app/home.html?roomId=${currentRoom.id}`;
+            const landingPageUrl = `https://kitworks-chicken-race.web.app/landing.html?roomId=${currentRoom.id}`;
             const shareText = `[출발! 치킨 레이스]\n친구가 레이스에 초대했습니다!\n방 제목: ${currentRoom.title}\n비밀번호: ${currentRoom.password ? currentRoom.password : '없음'}`;
             
             // 스마트폰 기본 공유 창 띄우기 (카카오톡, 문자 등 메신저 자동 지원)
