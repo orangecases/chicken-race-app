@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chicken Race - 모바일 앱 다운로드</title>
-    <link rel="stylesheet" href="style/landing.css">
+    <title>Chicken Race Homepage</title>
+    <link rel="stylesheet" href="style/home.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:,"> <!-- [FIX] favicon.ico 404 오류 방지 -->
+    <link rel="icon" href="data:,">
 </head>
 <body class="bg-blur-box">
     <div class="container">
         <div class="game-title">
             <img src="assets/images/home-game_title.png" alt="Chicken Race">
         </div>
-        <p>이 게임은 <strong>모바일 앱 전용</strong>입니다.<br>지금 바로 스토어에서 앱을 다운로드하고 전 세계 유저들과 짜릿한 레이스를 즐겨보세요!</p>
+        <p id="dynamic-desc">이 게임은 <strong>모바일 앱 전용</strong>입니다.<br>지금 바로 스토어에서 앱을 다운로드하고 전 세계 유저들과 짜릿한 레이스를 즐겨보세요!</p>
         <div class="btn-group">
             <a href="https://apps.apple.com/app/id6761889932" class="btn apple" target="_blank">
                 <img src="assets/images/sns-ios.png" class="sns-icon" alt="Apple"> App Store에서 받기
@@ -23,24 +23,28 @@
             </a>
         </div>
     </div>
-</body>
-<script>
-    // 1. 주소창에서 방 번호(?roomId=...) 낚아채기
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get('roomId');
 
-    if (roomId) {
-        // 2. 앱을 깨우는 커스텀 URL 스킴 호출 (예: chickenrace://join?roomId=방번호)
-        const appUrl = `chickenrace://join?roomId=${roomId}`;
-        
-        // 3. 브라우저가 화면을 띄우자마자 즉시 앱 호출 시도
-        window.location.href = appUrl;
+    <!-- 👇 [신규 추가] 앱을 강제로 깨우는 딥링크 스크립트 -->
+    <script>
+        // 1. 주소창에서 공유받은 방 번호(?roomId=...) 낚아채기
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('roomId');
 
-        // 4. 안내 문구 살짝 변경
-        const desc = document.querySelector('p');
-        if (desc) {
-            desc.innerHTML = `<strong>초대받은 레이스룸으로 이동 중입니다...</strong><br>만약 앱이 열리지 않는다면 아래 버튼을 눌러 앱을 먼저 설치해 주세요!`;
+        if (roomId) {
+            // 2. 안내 문구 살짝 변경하여 앱으로 이동 중임을 알림
+            const desc = document.getElementById('dynamic-desc');
+            if (desc) {
+                desc.innerHTML = `<strong>초대받은 레이스룸으로 이동 중입니다...</strong><br>만약 게임이 켜지지 않는다면 아래 버튼을 눌러 앱을 먼저 설치해 주세요!`;
+            }
+
+            // 3. 앱을 깨우는 커스텀 URL 스킴 호출 (치킨 레이스 앱아 일어나라!)
+            const appUrl = `chickenrace://join?roomId=${roomId}`;
+            
+            // 4. 브라우저가 화면을 띄우자마자 즉시 앱 호출 시도
+            setTimeout(() => {
+                window.location.href = appUrl;
+            }, 300);
         }
-    }
-</script>
+    </script>
+</body>
 </html>
