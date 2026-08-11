@@ -2510,6 +2510,10 @@ async function enterGameScene(mode, roomData = null) {
         setControlsVisibility(false);
         drawStaticFrame();
         document.getElementById('game-start-screen').classList.remove('hidden');
+        
+        // 👇 [신규 추가] 싱글 모드 진입 시 초대 버튼을 확실하게 숨깁니다.
+        const btnShare = document.querySelector('.btn-share');
+        if (btnShare) btnShare.style.display = 'none';
     }
 }
 
@@ -3138,21 +3142,25 @@ document.addEventListener('DOMContentLoaded', () => {
         btnShare.onclick = () => {
             if (!currentRoom) return;
             
-            // 💡 앱 미설치 유저를 스토어로 유도하기 위해 기존 landing.html 주소를 사용합니다.
-            // (파이어베이스 호스팅 주소 뒤에 ?roomId=방번호 를 붙여서 전송)
             const landingPageUrl = `https://kitworks-chicken-race.web.app/landing.html?roomId=${currentRoom.id}`;
-            const shareText = `[출발! 치킨 레이스]\n친구가 레이스에 초대했습니다!\n방 제목: ${currentRoom.title}\n비밀번호: ${currentRoom.password ? currentRoom.password : '없음'}`;
+            // 안드로이드를 위해 링크를 포함한 전체 텍스트를 미리 하나로 조립합니다.
+            const shareText = `[출발! 치킨 레이스]\n친구가 레이스에 초대했습니다!\n방 제목: ${currentRoom.title}\n비밀번호: ${currentRoom.password ? currentRoom.password : '없음'}\n링크: ${landingPageUrl}`;
             
-            // 스마트폰 기본 공유 창 띄우기 (카카오톡, 문자 등 메신저 자동 지원)
-            if (navigator.share) {
+            // 1. 안드로이드 앱 환경인 경우 (네이티브 브릿지 호출)
+            if (window.AndroidBridge) {
+                window.invokeNativeApp('shareLink', shareText);
+            } 
+            // 2. iOS 앱이거나 웹 브라우저 등 navigator.share 지원 환경
+            else if (navigator.share) {
                 navigator.share({
                     title: '출발! 치킨 레이스',
-                    text: shareText,
+                    text: `[출발! 치킨 레이스]\n친구가 레이스에 초대했습니다!\n방 제목: ${currentRoom.title}\n비밀번호: ${currentRoom.password ? currentRoom.password : '없음'}`,
                     url: landingPageUrl 
                 }).catch(console.error);
-            } else {
-                // PC 브라우저 등 기본 공유창을 지원하지 않는 환경을 위한 클립보드 복사(Fallback)
-                navigator.clipboard.writeText(`${shareText}\n링크: ${landingPageUrl}`).then(() => {
+            } 
+            // 3. 둘 다 지원 안하는 PC 웹 환경 (클립보드 복사 Fallback)
+            else {
+                navigator.clipboard.writeText(shareText).then(() => {
                     alert('초대 링크가 복사되었습니다! 메신저에 붙여넣기(Ctrl+V) 해주세요.');
                 });
             }
