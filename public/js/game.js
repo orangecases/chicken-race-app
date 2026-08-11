@@ -2495,14 +2495,13 @@ async function enterGameScene(mode, roomData = null) {
         const usedAttempts = (currentUser && currentUser.joinedRooms[currentRoom.id]) ? currentUser.joinedRooms[currentRoom.id].usedAttempts : 0;
         const btnShare = document.querySelector('.btn-share'); // 👇 [신규 추가] 공유 버튼 요소 찾기
 
-        if (isHost && usedAttempts === 0) {
+        if (currentGameMode === 'multi' && isHost && usedAttempts === 0) {
             const timeMsgEl = document.querySelector('#game-start-screen .time-message');
-            if (timeMsgEl) timeMsgEl.style.display = 'none'; // 타이머 글씨 숨김
-            if (btnShare) btnShare.style.display = 'block';  // 👇 [신규 추가] 방장 + 첫 판일 때만 버튼 표시!
+            if (timeMsgEl) timeMsgEl.style.display = 'none'; 
+            if (btnShare) btnShare.style.display = 'block'; 
         } else {
-            // 방장이 아니거나 방장이어도 이미 한 판 했다면 정상적으로 15초 타이머 작동
             startAutoActionTimer(15, 'exit', '#game-start-screen .time-message');
-            if (btnShare) btnShare.style.display = 'none';   // 👇 [신규 추가] 그 외의 상황에서는 무조건 버튼 숨김!
+            if (btnShare) btnShare.style.display = 'none';  // 싱글 모드이거나 방장이 아니면 무조건 숨김
         }
         
         renderMultiRanking();
