@@ -3040,6 +3040,18 @@ async function loadUserData(user) {
                 roomFetchPromise = null;
                 fetchRaceRooms(false);
                 fetchMyRooms();
+
+                // 👇 [신규 추가] 파이어베이스 로그인이 완료된 직후, 밀려있던 딥링크 방 번호가 있는지 확인하고 자동 입장!
+                setTimeout(() => {
+                    const pendingRoomId = sessionStorage.getItem('pendingDeepLinkRoomId');
+                    if (pendingRoomId && currentUser) {
+                        sessionStorage.removeItem('pendingDeepLinkRoomId');
+                        console.log("🔗 잠들어있던 딥링크 방으로 자동 입장합니다:", pendingRoomId);
+                        
+                        // 이미 로그인 된 상태이므로 즉시 딥링크 함수 재호출
+                        window.handleDeepLink(pendingRoomId);
+                    }
+                }, 500); // 유저 정보가 화면에 완전히 그려질 수 있도록 0.5초 넉넉히 대기
             }
 
             updateCoinUI();
