@@ -3148,7 +3148,7 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 👇 [신규 추가] 앱이 꺼져있을 때(콜드 스타트) 넘어온 URL 방 번호 안전하게 캐치
+    // 👇 [신규 복구] 앱이 꺼져있을 때(콜드 스타트) 넘어온 URL 방 번호 안전하게 캐치
     const urlParams = new URLSearchParams(window.location.search);
     const initialRoomId = urlParams.get('roomId');
     if (initialRoomId) {
@@ -3159,7 +3159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    // 친구 초대하기(기본 공유창) 버튼 클릭 이벤트
+    // 친구 초대하기(기본 공유창) 버튼 클릭 이벤트 (아래부터는 원래 있던 기존 코드입니다)
     const btnShare = document.querySelector('.btn-share');
     if (btnShare) {
         btnShare.onclick = () => {
@@ -4224,10 +4224,8 @@ window.onNativeLoginSuccess = function(token) {
     firebase.auth().signInWithCredential(credential)
         .then((result) => {
             console.log("✅ 로그인 성공!");
-            // 1. 로그인 모달 닫기
-            document.getElementById('scene-auth').classList.add('hidden');
-            // 2. 사용자 프로필 화면 즉시 띄우기
-            setTimeout(() => { showUserProfile(); }, 300);
+            // 고정 시간(300ms) 대기 대신, 유저 데이터가 완전히 로드될 때까지 기다리는 튼튼한 함수 사용!
+            window.waitForUserAndShowProfile();
         })
         .catch((error) => {
             console.error("❌ 인증 실패:", error);
@@ -4244,9 +4242,7 @@ window.handleDeepLink = async function(roomId) {
     
     if (!roomId) return;
 
-    // 1. 로그인 여부 확인
     if (!isLoggedIn) {
-        // 비로그인 상태면 방 번호를 임시 기억해두고 로그인 창 띄우기
         sessionStorage.setItem('pendingDeepLinkRoomId', roomId);
         const sceneAuth = document.getElementById('scene-auth');
         if (sceneAuth) {
@@ -4260,19 +4256,14 @@ window.handleDeepLink = async function(roomId) {
         return;
     }
 
-    // 2. 로그인되어 있다면 방 정보 조회 후 즉시 입장 시도!
     try {
         const roomDoc = await db.collection('rooms').doc(roomId).get();
         if (roomDoc.exists) {
             const roomData = mapFirestoreDocToRoom(roomDoc);
-            
-            // 방이 가득 찼거나 종료되었는지 사전 검사
             if (roomData.status === 'finished') {
                 alert("이미 종료된 레이스룸입니다.");
                 return;
             }
-            
-            // 비밀번호가 걸려있으면 비번 창으로, 없으면 곧바로 입장!
             if (roomData.isLocked && !unlockedRoomIds.includes(roomData.id)) {
                 showPasswordInput(roomData);
             } else {
@@ -4306,23 +4297,29 @@ window.waitForUserAndShowProfile = function() {
     }, 500); // 유저 정보가 세팅될 시간을 약간 벌어줍니다.
 };
 
-// [신규] 유저 데이터가 완전히 로드될 때까지 기다렸다가 모달을 띄우는 함수
+// [통합/정리됨] 유저 데이터가 완전히 로드될 때까지 기다렸다가 프로필(또는 딥링크 방)을 띄우는 함수
 window.waitForUserAndShowProfile = function() {
     const checkInterval = setInterval(() => {
-        // currentUser가 생성되고, 닉네임 데이터까지 완벽하게 세팅되었다면
+        // currentUser가 완벽히 세팅되었을 때
         if (currentUser && currentUser.nickname) {
-            clearInterval(checkInterval); // 추적 중지
+            clearInterval(checkInterval);
 
-            // 로그인 모달 숨기기 & 화면 차단기 제거
             const sceneAuth = document.getElementById('scene-auth');
             if (sceneAuth) sceneAuth.classList.add('hidden');
-            const blockUi = document.getElementById('auth-block-ui');
-            if (blockUi) blockUi.remove();
-
-            // 완벽한 상태에서 프로필 모달 띄우기
-            showUserProfile();
+            
+            const pendingRoomId = sessionStorage.getItem('pendingDeepLinkRoomId');
+            
+            // 1. 딥링크 대기열이 있다면 방으로 직행!
+            if (pendingRoomId) {
+                sessionStorage.removeItem('pendingDeepLinkRoomId');
+                window.handleDeepLink(pendingRoomId);
+            } 
+            // 2. 딥링크가 없다면 정상적으로 내 프로필 창 띄우기
+            else {
+                showUserProfile();
+            }
         }
-    }, 100); // 0.1초마다 데이터가 도착했는지 찔러봄
+    }, 100);
 };
 
 // 💡 [최종 정리] 1. 고객센터 (이메일 안내창)
