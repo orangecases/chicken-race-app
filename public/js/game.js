@@ -4216,7 +4216,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * [앱 전용] 안드로이드 네이티브 로그인 성공 시 호출되는 콜백 함수
- * @param {string} token - 안드로이드에서 건네준 Google ID 토큰
  */
 window.onNativeLoginSuccess = function(token) {
     console.log("🎁 앱에서 로그인 토큰 도착!");
@@ -4224,7 +4223,8 @@ window.onNativeLoginSuccess = function(token) {
     firebase.auth().signInWithCredential(credential)
         .then((result) => {
             console.log("✅ 로그인 성공!");
-            // 고정 시간(300ms) 대기 대신, 유저 데이터가 완전히 로드될 때까지 기다리는 튼튼한 함수 사용!
+            document.getElementById('scene-auth').classList.add('hidden');
+            // 로그인 데이터가 완전히 준비될 때까지 기다렸다가 다음 화면으로 넘어갑니다.
             window.waitForUserAndShowProfile();
         })
         .catch((error) => {
@@ -4235,7 +4235,6 @@ window.onNativeLoginSuccess = function(token) {
 
 /**
  * 네이티브 앱(안드로이드/iOS)이 딥링크를 타고 켜졌을 때 호출해 줄 수신부
- * @param {string} roomId - 딥링크에서 추출한 방 고유 ID
  */
 window.handleDeepLink = async function(roomId) {
     console.log("🔗 딥링크 수신 완료! 이동할 방 번호:", roomId);
@@ -4277,30 +4276,9 @@ window.handleDeepLink = async function(roomId) {
     }
 };
 
-// 💡 [추가 보완] 로그인을 마치고 돌아왔을 때, 기억해둔 딥링크 방이 있으면 마저 이동시킵니다.
-// firebase.auth().onAuthStateChanged 내부의 loadUserData() 호출 바로 아래에 이 로직이 암묵적으로 연결되도록,
-// waitForUserAndShowProfile 함수 끝부분에 살짝 얹어줍니다.
-const originalWaitForUser = window.waitForUserAndShowProfile;
-window.waitForUserAndShowProfile = function() {
-    originalWaitForUser();
-    
-    setTimeout(() => {
-        const pendingRoomId = sessionStorage.getItem('pendingDeepLinkRoomId');
-        if (pendingRoomId && currentUser) {
-            sessionStorage.removeItem('pendingDeepLinkRoomId');
-            // 로그인 완료 후 프로필 창을 닫고 방으로 직행!
-            const sceneUserProfile = document.getElementById('scene-user-profile');
-            if (sceneUserProfile) sceneUserProfile.classList.add('hidden');
-            
-            window.handleDeepLink(pendingRoomId);
-        }
-    }, 500); // 유저 정보가 세팅될 시간을 약간 벌어줍니다.
-};
-
 // [통합/정리됨] 유저 데이터가 완전히 로드될 때까지 기다렸다가 프로필(또는 딥링크 방)을 띄우는 함수
 window.waitForUserAndShowProfile = function() {
     const checkInterval = setInterval(() => {
-        // currentUser가 완벽히 세팅되었을 때
         if (currentUser && currentUser.nickname) {
             clearInterval(checkInterval);
 
@@ -4309,20 +4287,17 @@ window.waitForUserAndShowProfile = function() {
             
             const pendingRoomId = sessionStorage.getItem('pendingDeepLinkRoomId');
             
-            // 1. 딥링크 대기열이 있다면 방으로 직행!
             if (pendingRoomId) {
                 sessionStorage.removeItem('pendingDeepLinkRoomId');
                 window.handleDeepLink(pendingRoomId);
-            } 
-            // 2. 딥링크가 없다면 정상적으로 내 프로필 창 띄우기
-            else {
+            } else {
                 showUserProfile();
             }
         }
     }, 100);
 };
 
-// 💡 [최종 정리] 1. 고객센터 (이메일 안내창)
+// 💡 1. 고객센터 (이메일 안내창)
 const btnCustomerService = document.getElementById('btn-customer-service');
 if (btnCustomerService) {
     const openCustomerService = (e) => {
@@ -4333,7 +4308,7 @@ if (btnCustomerService) {
     btnCustomerService.addEventListener('touchstart', openCustomerService, { passive: false });
 }
 
-// 💡 [최종 정리] 2. 이용약관 및 정책 (새 창 열기 + 안드로이드 앱 대응)
+// 💡 2. 이용약관 및 정책 
 const btnPrivacy = document.getElementById('btn-privacy-policy');
 if (btnPrivacy) {
     const openPrivacy = (e) => {
@@ -4341,8 +4316,8 @@ if (btnPrivacy) {
         const notionUrl = 'https://handsomely-carrot-b6f.notion.site/361080e7a5ed8037a778f04092248c31';
 
         if (window.AndroidBridge || (window.webkit && window.webkit.messageHandlers.openExternalBrowser)) {
-        window.invokeNativeApp('openExternalBrowser', notionUrl);
-    } else {
+            window.invokeNativeApp('openExternalBrowser', notionUrl);
+        } else {
             window.open(notionUrl, '_blank');
         }
     };
@@ -4350,7 +4325,7 @@ if (btnPrivacy) {
     btnPrivacy.addEventListener('touchstart', openPrivacy, { passive: false });
 }
 
-// 💡 [최종 정리] 3. 회원탈퇴 (확인창 후 DB 삭제)
+// 💡 3. 회원탈퇴
 const btnDelete = document.getElementById('btn-delete-account');
 if (btnDelete) {
     const deleteAccount = async (e) => {
@@ -4366,7 +4341,6 @@ if (btnDelete) {
         if (!confirm(confirmMsg)) return;
 
         try {
-            // 💡 [추가] 탈퇴 전, 내가 참여 중이던 방들을 유령 방으로 만들지 않기 위해 사전 정리 작업 진행
             if (currentUser && currentUser.joinedRooms) {
                 const roomIds = Object.keys(currentUser.joinedRooms);
                 for (const roomId of roomIds) {
@@ -4374,34 +4348,27 @@ if (btnDelete) {
                         const roomRef = db.collection('rooms').doc(roomId);
                         const participantsRef = roomRef.collection('participants');
 
-                        // 1. 해당 방의 내 참가자 정보를 hidden으로 업데이트
                         await participantsRef.doc(user.uid).update({ hidden: true });
 
-                        // 2. 방이 폭파될 조건인지 다시 확인
                         const participantsSnapshot = await participantsRef.get();
                         let shouldExplode = true;
                         participantsSnapshot.forEach(doc => {
                             if (!doc.data().hidden) shouldExplode = false;
                         });
 
-                        // 3. 내가 마지막 생존자(?)였다면 방을 폭파
                         if (shouldExplode) {
                             const batch = db.batch();
                             participantsSnapshot.forEach(doc => { batch.delete(doc.ref); });
                             batch.delete(roomRef);
                             await batch.commit();
-                            console.log(`💣 탈퇴 유저 정리로 인해 방 [${roomId}]이 폭파되었습니다.`);
                         }
                     } catch (roomErr) {
-                        console.error(`탈퇴 중 방 [${roomId}] 데이터 정리에 실패했으나 탈퇴를 계속 진행합니다:`, roomErr);
+                        console.error(`탈퇴 중 방 [${roomId}] 데이터 정리에 실패:`, roomErr);
                     }
                 }
             }
             await db.collection("users").doc(user.uid).delete();
-            console.log("🗑️ Firestore 유저 데이터 삭제 완료");
-
             await user.delete();
-            console.log("🗑️ Firebase 계정 영구 삭제 완료");
 
             alert("회원 탈퇴가 정상적으로 완료되었습니다. 이용해 주셔서 감사합니다.");
             location.reload();
@@ -4423,38 +4390,31 @@ if (btnDelete) {
 /* ============================================================
    [통합] 로그인 감지 및 데이터 완결성 보장 로직
    ============================================================ */
-irebase.auth().onAuthStateChanged((user) => {
-    // 로그인 버튼이 로딩 중이었다면 원래대로 복구
+firebase.auth().onAuthStateChanged((user) => {
     if (window.resetLoginButtons) window.resetLoginButtons();
 
     if (user) {
         console.log("👤 로그인 상태 감지됨:", user.email || user.uid);
         isLoggedIn = true;
-
-        // 🚨 핵심: 기존에 만들어두신 loadUserData 함수를 호출하여 유저 정보를 불러옵니다.
         loadUserData(user);
-
     } else {
         console.log("⚪ 로그아웃 상태 감지됨");
         isLoggedIn = false;
         currentUser = null;
         updateCoinUI();
 
-        // 로그아웃 시 UI 초기화
-        document.getElementById('scene-user-profile').classList.add('hidden');
+        const sceneUserProfile = document.getElementById('scene-user-profile');
+        if (sceneUserProfile) sceneUserProfile.classList.add('hidden');
         
-        // 로그아웃(게스트) 상태가 최종 확정되었을 때 안전하게 방 목록을 호출합니다.
         roomFetchPromise = null;
         fetchRaceRooms(false);
 
-        // 👇 [신규 복구됨] 로그아웃이 확정되었을 때, 밀려있는 딥링크 방 번호가 있다면 로그인 창 띄우기!
         setTimeout(() => {
             const pendingRoomId = sessionStorage.getItem('pendingDeepLinkRoomId');
             if (pendingRoomId) {
                 console.log("🔗 로그아웃 상태에서 딥링크 대기열 발견, 로그인 창 호출!");
-                // handleDeepLink 함수가 비로그인 상태를 감지하여 알아서 모달을 띄워줍니다.
                 window.handleDeepLink(pendingRoomId);
             }
-        }, 300); // 화면이 완전히 그려질 수 있도록 0.3초 여유를 줍니다.
+        }, 300); 
     }
 });
