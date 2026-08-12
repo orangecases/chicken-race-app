@@ -13,8 +13,16 @@
         <div class="game-title">
             <img src="assets/images/home-game_title.png" alt="Chicken Race">
         </div>
+        
+        <!-- 👇 [수정] 자바스크립트가 문구를 바꿀 수 있도록 id="dynamic-desc" 추가 -->
         <p id="dynamic-desc">이 게임은 <strong>모바일 앱 전용</strong>입니다.<br>지금 바로 스토어에서 앱을 다운로드하고 전 세계 유저들과 짜릿한 레이스를 즐겨보세요!</p>
+        
         <div class="btn-group">
+            <!-- 👇 [신규 추가] 브라우저 차단 시 유저가 직접 누를 수 있는 수동 입장 버튼 -->
+            <a id="btn-open-app" class="btn" style="display:none; background-color:#f1625c; color:white; width:100%; justify-content: center; margin-bottom:10px; border: 2px solid #9d3e3f;">
+                🚀 게임 앱 열고 방으로 바로 입장하기
+            </a>
+            
             <a href="https://apps.apple.com/app/id6761889932" class="btn apple" target="_blank">
                 <img src="assets/images/sns-ios.png" class="sns-icon" alt="Apple"> App Store에서 받기
             </a>
@@ -24,18 +32,31 @@
         </div>
     </div>
 
-    <!-- 앱 링크(App Links) 적용으로 인해 불필요해진 자바스크립트 강제 호출 로직 제거됨 -->
-    <script>
-        // 주소창에서 방 번호를 확인하여 초대 문구만 부드럽게 변경해 줍니다.
-        const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('roomId');
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('roomId');
 
-        if (roomId) {
-            const desc = document.getElementById('dynamic-desc');
-            if (desc) {
-                desc.innerHTML = `<strong>💌 친구가 레이스룸으로 초대했습니다!</strong><br><br>아래 버튼을 눌러 스토어에서 앱을 먼저 설치해 주세요.`;
-            }
+    if (roomId) {
+        // 초대 코드가 있으면 문구를 변경합니다.
+        const desc = document.getElementById('dynamic-desc');
+        if (desc) {
+            desc.innerHTML = `<strong>초대받은 레이스룸으로 이동 중입니다...</strong><br>만약 화면이 멈춰있다면 아래의 빨간 버튼을 눌러주세요!`;
         }
-    </script>
+
+        const appUrl = `chickenrace://join?roomId=${roomId}`;
+        
+        // 숨겨두었던 수동 버튼을 화면에 보여주고 딥링크를 연결합니다.
+        const btnOpenApp = document.getElementById('btn-open-app');
+        if (btnOpenApp) {
+            btnOpenApp.style.display = 'flex';
+            btnOpenApp.href = appUrl;
+        }
+        
+        // 브라우저가 자동 실행을 허용하는 환경을 위해 시도합니다.
+        setTimeout(() => {
+            window.location.href = appUrl;
+        }, 300);
+    }
+</script>
 </body>
 </html>
