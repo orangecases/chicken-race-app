@@ -4433,11 +4433,7 @@ firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         console.log("👤 로그인 상태 감지됨:", user.email || user.uid);
         isLoggedIn = true;
-
-        // 🚨 핵심: 여기서 기존에 만들어두신 loadUserData 함수를 호출합니다.
-        // loadUserData 내부에서 Firestore의 'coins' 등을 가져온 뒤 UI를 갱신하게 됩니다.
         loadUserData(user);
-
     } else {
         console.log("⚪ 로그아웃 상태 감지됨");
         isLoggedIn = false;
@@ -4450,5 +4446,15 @@ firebase.auth().onAuthStateChanged((user) => {
         // 💡 [신규 추가] 로그아웃(게스트) 상태가 최종 확정되었을 때 안전하게 방 목록을 호출합니다.
         roomFetchPromise = null;
         fetchRaceRooms(false);
+
+        // 👇 [신규 추가] 로그아웃이 확정되었을 때, 밀려있는 딥링크 방 번호가 있다면 로그인 창 띄우기!
+        setTimeout(() => {
+            const pendingRoomId = sessionStorage.getItem('pendingDeepLinkRoomId');
+            if (pendingRoomId) {
+                console.log("🔗 로그아웃 상태에서 딥링크 대기열 발견, 로그인 창 호출!");
+                // handleDeepLink를 호출하면 알아서 '로그인이 필요합니다' 창을 띄웁니다.
+                window.handleDeepLink(pendingRoomId);
+            }
+        }, 300); // UI가 완전히 그려질 수 있도록 0.3초 대기
     }
 });
