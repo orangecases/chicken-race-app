@@ -3148,6 +3148,17 @@ function setCoins(amount) {
 // [6. 이벤트 리스너]
 document.addEventListener('DOMContentLoaded', () => {
 
+    // 👇 [신규 추가] 앱이 꺼져있을 때(콜드 스타트) 넘어온 URL 방 번호 안전하게 캐치
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialRoomId = urlParams.get('roomId');
+    if (initialRoomId) {
+        console.log("🔗 초기 로딩 URL에서 딥링크 방 번호 캐치:", initialRoomId);
+        sessionStorage.setItem('pendingDeepLinkRoomId', initialRoomId);
+        
+        // 중복 입장 방지를 위해 주소창에서 파라미터 싹 지우기 (화면 깜빡임 없음)
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     // 친구 초대하기(기본 공유창) 버튼 클릭 이벤트
     const btnShare = document.querySelector('.btn-share');
     if (btnShare) {
