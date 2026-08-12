@@ -4426,7 +4426,7 @@ if (btnDelete) {
 /* ============================================================
    [통합] 로그인 감지 및 데이터 완결성 보장 로직
    ============================================================ */
-firebase.auth().onAuthStateChanged((user) => {
+irebase.auth().onAuthStateChanged((user) => {
     // 로그인 버튼이 로딩 중이었다면 원래대로 복구
     if (window.resetLoginButtons) window.resetLoginButtons();
 
@@ -4434,8 +4434,7 @@ firebase.auth().onAuthStateChanged((user) => {
         console.log("👤 로그인 상태 감지됨:", user.email || user.uid);
         isLoggedIn = true;
 
-        // 🚨 핵심: 여기서 기존에 만들어두신 loadUserData 함수를 호출합니다.
-        // loadUserData 내부에서 Firestore의 'coins' 등을 가져온 뒤 UI를 갱신하게 됩니다.
+        // 🚨 핵심: 기존에 만들어두신 loadUserData 함수를 호출하여 유저 정보를 불러옵니다.
         loadUserData(user);
 
     } else {
@@ -4444,20 +4443,21 @@ firebase.auth().onAuthStateChanged((user) => {
         currentUser = null;
         updateCoinUI();
 
-        // 로그아웃 시 UI 초기화 (필요시)
+        // 로그아웃 시 UI 초기화
         document.getElementById('scene-user-profile').classList.add('hidden');
         
         // 로그아웃(게스트) 상태가 최종 확정되었을 때 안전하게 방 목록을 호출합니다.
         roomFetchPromise = null;
         fetchRaceRooms(false);
 
-        // 👇 [누락 복구됨] 로그아웃이 확정되었을 때, 밀려있는 딥링크 방 번호가 있다면 로그인 창 띄우기!
+        // 👇 [신규 복구됨] 로그아웃이 확정되었을 때, 밀려있는 딥링크 방 번호가 있다면 로그인 창 띄우기!
         setTimeout(() => {
             const pendingRoomId = sessionStorage.getItem('pendingDeepLinkRoomId');
             if (pendingRoomId) {
                 console.log("🔗 로그아웃 상태에서 딥링크 대기열 발견, 로그인 창 호출!");
+                // handleDeepLink 함수가 비로그인 상태를 감지하여 알아서 모달을 띄워줍니다.
                 window.handleDeepLink(pendingRoomId);
             }
-        }, 300); // UI가 완전히 그려질 수 있도록 0.3초 대기
+        }, 300); // 화면이 완전히 그려질 수 있도록 0.3초 여유를 줍니다.
     }
 });
