@@ -706,6 +706,12 @@ position: relative;
     overflow-y: auto;
 }
 
+.android-app .list-scroll-area::after {
+    content: '';
+    display: block;
+    height: 2.5rem; 
+}
+
 /*
    [수정] 컨트롤러가 올라왔을 때 목록이 가려지지 않도록 여백 확보.
    - list-scroll-area에 padding을 주면 스크롤바가 가려지므로,

@@ -2916,24 +2916,6 @@ function loginWithGoogle() {
 }
 
 /**
- * 구글 로그인 함수 이전(웹브라우저로그인불가) 버전
-
-function loginWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('profile');
-    provider.addScope('email');
-
-    if (window.AndroidBridge) {
-        window.invokeNativeApp('requestGoogleLogin');
-    } else {
-        // 'google'이라고 명시해서 저장합니다.
-        sessionStorage.setItem('pendingLoginProvider', 'google'); 
-        firebase.auth().signInWithRedirect(provider);
-    }
-}
- */
-
-/**
  * 애플 로그인
  */
 async function loginWithApple() {
@@ -3153,6 +3135,11 @@ function setCoins(amount) {
 
 // [6. 이벤트 리스너]
 document.addEventListener('DOMContentLoaded', () => {
+
+    // 안드로이드 앱(웹뷰) 환경인지 감지하여 body 태그에 전용 클래스 추가
+    if (window.AndroidBridge) {
+        document.body.classList.add('android-app');
+    }
 
     // 로그인 확인을 기다리지 않고, 앱이 켜지자마자 방 목록부터 병렬로 미리 가져옵니다!
     fetchRaceRooms(false);
