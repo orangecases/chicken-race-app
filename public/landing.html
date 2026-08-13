@@ -25,6 +25,14 @@
     </div>
 
     <script>
+
+        // 카카오톡 인앱 브라우저 감지 시 강제로 외부 브라우저(사파리/크롬)로 쫓아내기
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (userAgent.match(/kakaotalk/i)) {
+            // 카카오톡 전용 외부 브라우저 호출 스킴 실행
+            location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(window.location.href);
+        }
+        
         // 브라우저로 잘못 진입한 유저를 위한 백그라운드 자동 딥링크 (수동 버튼 노출 없음)
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('roomId');
