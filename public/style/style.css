@@ -704,8 +704,8 @@ position: relative;
 .list-scroll-area {
     flex: 1;
     overflow-y: auto;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
-
 /*
    [수정] 컨트롤러가 올라왔을 때 목록이 가려지지 않도록 여백 확보.
    - list-scroll-area에 padding을 주면 스크롤바가 가려지므로,
