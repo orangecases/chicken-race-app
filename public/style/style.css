@@ -523,7 +523,7 @@ body::before {
    ========================================= */
 #control-container {
     position: absolute;
-    bottom: env(safe-area-inset-bottom, 0px);
+    bottom: 0;
     left: 0;
     width: 100%;
     
