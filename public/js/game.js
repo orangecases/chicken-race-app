@@ -3010,9 +3010,9 @@ async function loadUserData(user) {
                     userRef.update({ email: correctEmail }).then(() => console.log("🔧 Firestore의 이메일 정보를 최신 정보로 수정했습니다."));
                 }
 
-                const lastActiveRoomId = sessionStorage.getItem('activeRoomId');
+                const lastActiveRoomId = localStorage.getItem('activeRoomId');
                 if (lastActiveRoomId) {
-                    sessionStorage.removeItem('activeRoomId');
+                    localStorage.removeItem('activeRoomId');
                     if (lastActiveRoomId === 'single_player_mode') {
                         console.log('⚠️ 비정상 종료 감지: 싱글 플레이 게임을 종료 처리했습니다.');
                     } else {
