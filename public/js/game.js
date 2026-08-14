@@ -1858,7 +1858,7 @@ async function performServerExit(roomId, isFullExit) {
  * 게임을 종료하고 로비(인트로) 화면으로 돌아갑니다.
  */
 async function exitToLobby(isFullExit = false) { 
-    sessionStorage.removeItem('activeRoomId');
+    localStorage.removeItem('activeRoomId');
 
     // [핵심 수정] 싱글 플레이 중(이어하기 화면 등)에 홈으로 나갈 때 지금까지의 점수 강제 저장!
     if (currentGameMode === 'single' && score > 0) {
@@ -2368,10 +2368,11 @@ async function enterGameScene(mode, roomData = null) {
     currentGameMode = mode;
     currentRoom = roomData;
 
+    // 비정상 종료 복구를 위해 localStorage를 활용
     if (mode === 'multi' && roomData) {
-        sessionStorage.setItem('activeRoomId', roomData.id);
+        localStorage.setItem('activeRoomId', roomData.id);
     } else if (mode === 'single') {
-        sessionStorage.setItem('activeRoomId', 'single_player_mode');
+        localStorage.setItem('activeRoomId', 'single_player_mode');
     }
 
     updateButtonCosts();
