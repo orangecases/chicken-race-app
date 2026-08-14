@@ -48,8 +48,9 @@ input, textarea {
 
 html, body {
     width: 100%;
-    height: 100%;
-    overflow: hidden; /* 스크롤 방지 */
+    height: 100dvh; /* iOS 하단바 등 동적 화면 변화에 대응하는 높이 */
+    position: fixed; /* 화면이 스크롤되어 올라가는 것을 원천 차단 */
+    overflow: hidden; 
 }
 html, body small{font-size: 70%;}
 
