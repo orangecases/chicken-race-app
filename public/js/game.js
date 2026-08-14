@@ -3141,6 +3141,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('android-app');
     }
 
+
+    // 안드로이드 앱에서 빈 공간 터치 시 강제로 키보드 내리기(포커스 해제)
+    window.addEventListener('touchstart', (e) => {
+        const targetTag = e.target ? e.target.tagName.toLowerCase() : '';
+        
+        // 터치한 대상이 입력창(input)이나 버튼(button)이 아닐 때만 작동
+        if (targetTag !== 'input' && targetTag !== 'button') {
+            if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'input') {
+                document.activeElement.blur(); // 포커스를 해제하여 키보드를 숨깁니다.
+            }
+        }
+    }, { passive: true });
+
+    // 방 입장 비밀번호 창에서 엔터(이동) 키 누르면 키보드 내리기
+    const inputRoomPassword = document.getElementById('input-room-password');
+    if (inputRoomPassword) {
+        inputRoomPassword.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                inputRoomPassword.blur(); // 포커스를 해제하여 키보드를 숨깁니다.
+                
+                // (선택 사항) 키보드가 내려가면서 '입장' 버튼까지 자동으로 눌리게 하고 싶다면 아래 주석(//)을 지워주세요.
+                // document.getElementById('btn-password-confirm').click();
+            }
+        });
+    }
+
     // 로그인 확인을 기다리지 않고, 앱이 켜지자마자 방 목록부터 병렬로 미리 가져옵니다!
     fetchRaceRooms(false);
 
@@ -4279,7 +4305,7 @@ window.handleDeepLink = async function(roomId) {
     }
 };
 
-// [통합/정리됨] 유저 데이터가 완전히 로드될 때까지 기다렸다가 프로필(또는 딥링크 방)을 띄우는 함수
+// 유저 데이터가 완전히 로드될 때까지 기다렸다가 프로필(또는 딥링크 방)을 띄우는 함수
 window.waitForUserAndShowProfile = function() {
     const checkInterval = setInterval(() => {
         if (currentUser && currentUser.nickname) {
@@ -4389,17 +4415,6 @@ if (btnDelete) {
     btnDelete.addEventListener('click', deleteAccount);
     btnDelete.addEventListener('touchstart', deleteAccount, { passive: false });
 }
-
-window.addEventListener('touchstart', (e) => {
-    const targetTag = e.target ? e.target.tagName.toLowerCase() : '';
-    
-    // 터치한 대상이 입력창(input)이나 버튼(button)이 아닐 때만 작동
-    if (targetTag !== 'input' && targetTag !== 'button') {
-        if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'input') {
-            document.activeElement.blur(); // 포커스를 해제하여 키보드를 숨깁니다.
-        }
-    }
-}, { passive: true });
 
 /* ============================================================
    [통합] 로그인 감지 및 데이터 완결성 보장 로직
