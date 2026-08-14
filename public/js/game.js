@@ -4390,6 +4390,17 @@ if (btnDelete) {
     btnDelete.addEventListener('touchstart', deleteAccount, { passive: false });
 }
 
+window.addEventListener('touchstart', (e) => {
+    const targetTag = e.target ? e.target.tagName.toLowerCase() : '';
+    
+    // 터치한 대상이 입력창(input)이나 버튼(button)이 아닐 때만 작동
+    if (targetTag !== 'input' && targetTag !== 'button') {
+        if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'input') {
+            document.activeElement.blur(); // 포커스를 해제하여 키보드를 숨깁니다.
+        }
+    }
+}, { passive: true });
+
 /* ============================================================
    [통합] 로그인 감지 및 데이터 완결성 보장 로직
    ============================================================ */
