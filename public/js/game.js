@@ -3141,7 +3141,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('android-app');
     }
 
-
     // 안드로이드 앱에서 빈 공간 터치 시 강제로 키보드 내리기(포커스 해제)
     window.addEventListener('touchstart', (e) => {
         const targetTag = e.target ? e.target.tagName.toLowerCase() : '';
@@ -3154,18 +3153,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, { passive: true });
 
-    // 방 입장 비밀번호 창에서 엔터(이동) 키 누르면 키보드 내리기
-    const inputRoomPassword = document.getElementById('input-room-password');
-    if (inputRoomPassword) {
-        inputRoomPassword.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
-                inputRoomPassword.blur(); // 포커스를 해제하여 키보드를 숨깁니다.
-                
-                // (선택 사항) 키보드가 내려가면서 '입장' 버튼까지 자동으로 눌리게 하고 싶다면 아래 주석(//)을 지워주세요.
-                // document.getElementById('btn-password-confirm').click();
+    // 👇 모든 입력창에서 엔터(이동/완료) 키 누르면 키보드 내리기 (안드로이드 keyCode 13 호환)
+    window.addEventListener('keyup', (e) => {
+        // 아이폰의 'Enter' 문자와 안드로이드의 숫자 코드 '13'을 모두 감지합니다.
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            const activeElement = document.activeElement;
+            // 현재 선택된 요소가 입력창(input)이라면 포커스를 해제하여 키보드를 숨김
+            if (activeElement && activeElement.tagName.toLowerCase() === 'input') {
+                activeElement.blur();
             }
-        });
-    }
+        }
+    });
 
     // 로그인 확인을 기다리지 않고, 앱이 켜지자마자 방 목록부터 병렬로 미리 가져옵니다!
     fetchRaceRooms(false);

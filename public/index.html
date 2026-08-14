@@ -65,12 +65,12 @@
             <div class="modal-body">
                 <div class="input-group">
                     <label>방 제목</label>
-                    <input type="text" id="input-room-title" placeholder="닭들의 전쟁 (최대 20자)" maxlength="20">
+                    <input type="text" id="input-room-title" placeholder="닭들의 전쟁 (최대 20자)" maxlength="20" enterkeyhint="done">
                 </div>
 
                 <div class="input-group">
                     <label>비밀번호</label>
-                    <input type="tel" id="input-room-password-create" placeholder="공개 (숫자만)" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                    <input type="tel" id="input-room-password-create" placeholder="공개 (숫자만)" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');" enterkeyhint="done">
                 </div>
                 
                 <!-- <div class="input-group">
@@ -113,7 +113,7 @@
             <div class="modal-body">
                 <div class="input-group">
                     <label>비밀번호</label>
-                    <input type="password" id="input-room-password" placeholder="비밀번호를 입력하세요" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                    <input type="password" id="input-room-password" placeholder="비밀번호를 입력하세요" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '');" enterkeyhint="done">
                 </div>
                 <p id="password-message" class="auth-message"></p>
             </div>
@@ -208,7 +208,7 @@
                 </div>
                 <div class="input-group">
                     <label>닉네임</label>
-                    <input type="text" id="profile-nickname" placeholder="사용할 닉네임을 입력하세요" maxlength="12">
+                    <input type="text" id="profile-nickname" placeholder="사용할 닉네임을 입력하세요" maxlength="12" enterkeyhint="done">
                 </div>
                 <div class="input-group row">
                     <label>보유금화</label>
